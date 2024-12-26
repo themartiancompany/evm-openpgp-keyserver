@@ -10,6 +10,13 @@ Canonical form for keys associated to an address is:
 <user>@<address>
 ```
 
+### Usage
+
+```bash
+evm-openpgp-key-publish \
+  -h
+```
+
 ## License
 
 This program is released under the terms of the GNU
