@@ -80,54 +80,16 @@ _cache_dir_auto_detect() {
     "${_dir}"
 }
 
-_key_evmfs_upload() {
-  local \
-    _key="${1}"
-  evmfs \
-    "${_evmfs_publish_opts[@]}" \
-    publish \
-      "${_key}" 
-  _uri="$( \
-    evmfs \
-      "${_evmfs_call_opts[@]}" \
-      publish \
-        "${_key}")"
-  _msg=(
-    "key '${_key}' correctly uploaded,"
-    "target URI set to '${_uri}'"
-  )
-  _msg_info \
-    "${_msg[*]}"
-}
-
 _opts_setup() {
   local \
-    _msg=()
+    _msg=() \
+    _credentials_opts=()
   if [[ "${quiet}" == "n" ]]; then
-    _publish_call_opts+=(
-      -v
-    )
     _evmfs_publish_opts+=(
       -v
     )
   fi
-  _evm_contract_call_opts+=(
-    -n
-      "${_target_network}"
-    -N
-      "${_wallet_name}"
-    -k
-      "${_api_key_path}"
-    -A
-      "${_abi}"
-    -B
-      "${_bytecode}"
-    -C
-      "${_compiler_output}"
-  )
-  _evmfs_opts+=(
-    -n
-      "${_target_network}"
+  _credentials_opts+=(
     -N
       "${_wallet_name}"
     -k
@@ -139,18 +101,29 @@ _opts_setup() {
     -p
       "${_wallet_password}"
   )
-  _publish_call_opts+=(
-    "${_evm_contract_call_opts[@]}"
+  _evm_contract_call_opts+=(
+    "${_credentials_opts[@]}"
+    -n
+      "${_target_network}"
+    -A
+      "${_abi}"
+    -B
+      "${_bytecode}"
+    -C
+      "${_compiler_output}"
     -t
-      "dynamic"
+      "static"
   )
-  _evmfs_publish_opts+=(
-    "${_evmfs_opts[@]}"
+  _evmfs_opts+=(
+    "${_credentials_opts[@]}"
+    -n
+      "${_target_network}"
   )
-  _evmfs_call_opts+=(
-    "${_evmfs_opts[@]}"
-    -m
-      "simulate"
+  _keys_amount_call_opts+=(
+    "${_evm_contract_call_opts[@]}"
+  )
+  _uri_get_call_opts+=(
+    "${_evm_contract_call_opts[@]}"
   )
   _msg=(
     "evm-contract-call will be called"
@@ -163,8 +136,7 @@ _opts_setup() {
 _key_download() {
   local \
     _uri="${1}" \
-    _output_file="${2}" \
-    _evmfs_opts=()
+    _output_file="${2}"
   _msg=(
     "downloading in '${_output_file}' the key"
     "at URI '${_uri}'."
@@ -329,6 +301,38 @@ _target_key_check() {
   fi
 }
 
+_keys_amount_get() {
+  evm-contract-call \
+    "${_keys_amount_call_opts[@]}" \
+    "${_ks_address}" \
+    "keyNo" \
+    "${_address}" \
+    "${_publisher}"
+}
+
+_uri_key_get() {
+  local \
+    _key="${1}"
+  evm-contract-call \
+    "${_uri_get_call_opts[@]}" \
+    "${_ks_address}" \
+    "readKey" \
+    "${_address}" \
+    "${_publisher}" \
+    "${_key}"
+}
+
+_key_fingerprint_get() {
+  local \
+    _fingerprint="${1}"
+  evm-contract-call \
+    "${_uri_get_call_opts[@]}" \
+    "${_ks_address}" \
+    "readKeyFingerprint" \
+    "${_address}" \
+    "${_publisher}" \
+    "${_fingerprint}"
+}
 _keys_receive() {
   local \
     _target_network="${1}" \
@@ -337,31 +341,77 @@ _keys_receive() {
     _address="${4}" \
     _fingerprint="${5}" \
     _key="${6}" \
-    _uri="${7}" \
     _abi="${9}" \
     _bytecode="${10}" \
     _compiler_output="${11}" \
     _msg=() \
     _evm_contract_call_opts=() \
     _evmfs_opts=() \
-    _publish_call_opts=()
+    _keys=() \
+    _keys_amount \
+    _keys_amount_call_opts=() \
+    _work_dir \
+    _uri
+  _work_dir="${_cache_dir}/receive"
+  mkdir \
+    -p \
+    "${_work_dir}"
   _opts_setup
-  if [[ "${_target_key}" == "" ]] && \
-     [[ "${_key_fingerprint}" == "" ]]; then
+  if [[ "${_key}" == "" ]] && \
+     [[ "${_fingerprint}" == "" ]]; then
     _msg=(
       "no target key or fingerprint"
       "specified, downloading all"
       "available keys."
     )
-  else
+    _msg_info \
+      "${_msg[*]}"
+    _keys_amount="$( \
+      _keys_amount_get)"
+    _msg=(
+      "got a total of '${_keys_amount}'"
+      "for address '${_address}'"
+    )
+    _msg_info \
+      "${_msg[*]}"
+    _keys+=( $( \
+      seq \
+        0 \
+        "$(( "${_keys_amount}" - 1))")
+    )
+  elif [[ "${_key}" != "" ]] && \
+       [[ "${_fingerprint}" == "" ]]; then;
+    _keys+=(
+      "${_key}"
+    )
+  elif [[ "${_fingerprint}" != "" ]] && \
+       [[ "${_key}" == "" ]]; then;
+    _key="$( \
+      _key_fingerprint_get \
+        "${_fingerprint}")"
+    _msg=(
+      "got key '${_key}' for"
+      "fingerprint '${_fingerprint}'"
+    )
+    _msg_info \
+      "${_msg[*]}"
+    _keys+=(
+      "${_key}"
+    )
+  fi
+  for _key in "${_keys[@]}"; do
     _msg=(
       "downloading '${_publisher}'"
-      "key '${_key}' with fingerprint"
-      "'${_fingerprint}' for address"
+      "key '${_key}' for address"
       "'${_address}'."
     )
     _msg_info \
       "${_msg[*]}"
+    _uri="$( \
+      _uri_key_get \
+        "${_key}")"
+  done
+  if [[]]; then
   fi
   evm-contract-call \
     "${_publish_call_opts[@]}" \
