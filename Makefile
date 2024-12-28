@@ -200,5 +200,8 @@ install-scripts:
 	$(_INSTALL_EXE) \
 	  "$(_PROJECT)/evm-openpgp-key-publish" \
 	  "$(BIN_DIR)/evm-openpgp-key-publish";
+	$(_INSTALL_EXE) \
+	  "$(_PROJECT)/evm-openpgp-key-receive" \
+	  "$(BIN_DIR)/evm-openpgp-key-receive";
 
 .PHONY: $(_PHONY_TARGETS)
