@@ -87,7 +87,7 @@ _opts_setup() {
     _msg=() \
     _credentials_opts=()
   if [[ "${quiet}" == "n" ]]; then
-    _evmfs_publish_opts+=(
+    _evmfs_opts+=(
       -v
     )
   fi
@@ -138,7 +138,13 @@ _opts_setup() {
 _key_download() {
   local \
     _uri="${1}" \
-    _output_file="${2}"
+    _output_file="${2}" \
+    _get_opts=()
+  _get_opts+=(
+    "${_evmfs_opts[@]}"
+    -o
+      "${_output_file}"
+  )
   _msg=(
     "downloading in '${_output_file}' the key"
     "at URI '${_uri}'."
@@ -146,7 +152,7 @@ _key_download() {
   _msg_info \
     "${_msg[*]}"
   evmfs \
-    "${_evmfs_opts[@]}" \
+    "${_get_opts[@]}" \
     get \
       "${_uri}"
 }
@@ -227,7 +233,7 @@ _keys_receive() {
       _keys_amount_get)"
     _msg=(
       "got a total of '${_keys_amount}'"
-      "for address '${_address}'"
+      "keys for address '${_address}'"
     )
     _msg_info \
       "${_msg[*]}"
@@ -258,8 +264,8 @@ _keys_receive() {
   fi
   for _key in "${_keys[@]}"; do
     _msg=(
-      "downloading '${_publisher}'"
-      "key '${_key}' for address"
+      "getting publisher '${_publisher}'"
+      "key '${_key}' uri for address"
       "'${_address}'."
     )
     _msg_info \
@@ -271,10 +277,11 @@ _keys_receive() {
       "${_uri}"
     )
   done
-  for _uri in $(seq \
-                  0 \
-                  "$(( "${#_uris[@]}" - 1))"); do
-    _key_file="${_work_dir}/${_output_prefix_basename}.${_keys[${_uri}]}"
+  for _uri \
+    in $(seq \
+           0 \
+           "$(( "${#_uris[@]}" - 1))"); do
+    _key_file="${_work_dir}/${_output_prefix_basename}.${_keys[${_uri}]}.asc"
     _key_download \
       "${_uris[${_uri}]}" \
       "${_key_file}"
@@ -324,6 +331,9 @@ _key_address_check() {
     _key="${1}" \
     _address="${2}" \
     _domain \
+    _email \
+    _fingerprint \
+    _user_id \
     _msg=()
   _email="$( \
     gpg-key-info \
@@ -341,19 +351,79 @@ _key_address_check() {
     _msg_error \
       "${_msg[*]}" \
       1
+  elif [[ "${_address}" == "${_domain}" ]]; then
+    _user_id="$( \
+      gpg-key-info \
+        -o \
+          "email" \
+        "${_key}")"
+    _fingerprint="$( \
+      gpg-key-info \
+        -o \
+          "fingerprint" \
+        "${_key}")"
+    _msg=(
+      "key '${_key}' identifying"
+      "valid user id '${_user_id}'"
+      "with fingerprint '${_fingerprint}'"
+    )
+    _msg_info \
+      "${_msg[*]}"
   fi
 }
 
 _keys_move() {
   local \
     _output_prefix="${1}" \
-    _output_prefix_dirname
+    _output_prefix_dirname \
+    _msg=()
   _output_prefix_dirname="$( \
     dirname \
       "${_output_prefix}")"
   mv \
     "${_key_files[@]}" \
     "${_output_prefix_dirname}"
+  _msg=(
+    "keys correctly moved to"
+    "'${_output_prefix_dirname}' directory"
+  )
+  _msg_info \
+    "${_msg[*]}"
+}
+
+_keys_import() {
+  local \
+    _gnupg_home="${1}" \
+    _gpg_opts=() \
+    _key \
+    _msg=()
+  _msg=(
+    "importing keys"
+    "'${_key_files[*]}' into"
+    "GNUPG keystore at directory"
+    "${_gnupg_home}"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  mkdir \
+    -p \
+    "${_gnupg_home}"
+  chmod \
+    700 \
+    "${_gnupg_home}"
+  _gpg_opts+=(
+    --homedir
+      "${_gnupg_home}"
+    --import
+  )
+  for _key in "${_key_files[@]}"; do
+    GNUPG_HOME="${_gnupg_home}" \
+    cat \
+      "${_key}" | \
+      gpg \
+        "${_gpg_opts[@]}" \
+        "${_key}"
+  done
 }
 
 _evm_openpgp_key_receive() {
@@ -369,30 +439,25 @@ _evm_openpgp_key_receive() {
     _api_key_path="${9}" \
     _cache_dir="${10}" \
     _input_type="${11}" \
-    _target_publisher="${12}" \
-    _target_address="${13}" \
-    _target_key="${14}" \
-    _key_fingerprint="${15}" \
-    _key_import="${16}" \
-    _output_prefix="${17}" \
+    _key_import="${12}" \
+    _gnupg_home="${13}" \
+    _target_publisher="${14}" \
+    _target_address="${15}" \
+    _target_key="${16}" \
+    _key_fingerprint="${17}" \
+    _output_prefix="${18}" \
     _key_files=() \
     _msg=() \
     _ks_abi \
     _ks_bytecode \
     _ks_compiler_output
   shift \
-    17
+    18
   _command_args+=(
     "$@"
   )
   if [[ "${_target_publisher}" == "" ]]; then
     _target_publisher="${_target_address}"
-    _msg=(
-      "getting key(s) from user"
-      "namespace '${_target_publisher}'"
-    )
-    _msg_info \
-      "${_msg[*]}"
   fi
   if [[ "${_target_publisher}" != "${_target_address}" ]]; then
     _msg=(
@@ -402,6 +467,13 @@ _evm_openpgp_key_receive() {
     )
     _msg_warning \
       "${_msg[*]}"
+  elif [[ "${_target_publisher}" == "${_target_address}" ]]; then
+  _msg=(
+    "getting '${_target_address}' self-published"
+    "key(s) (safest option)"
+  )
+  _msg_info \
+    "${_msg[*]}"
   fi
   if [[ "${_input_type}" == "fingerprint" ]]; then
     _key_fingerprint="${_target_key}"
@@ -447,7 +519,7 @@ _evm_openpgp_key_receive() {
     "${_ks_compiler_output}"
   if [[ "${_key_import}" == "y" ]]; then
     _keys_import \
-      "${_output_prefix}"
+      "${_gnupg_home}"
   elif [[ "${_key_import}" == "n" ]]; then
     _keys_move \
       "${_output_prefix}"
@@ -746,7 +818,7 @@ _ks_address_auto_detect() {
       "${_contract}")"
   if [[ "${_address}" == "" ]]; then
     _msg=(
-      "error getting FileSystem version"
+      "error getting KeyServer version"
       "${_version} deployment address"
       "for network '${_network}'"
     )
@@ -803,6 +875,8 @@ _key_import_auto_detect() {
 _output_prefix_auto_detect() {
   local \
     _key_import \
+    _base_prefix \
+    _key_basename \
     _output_prefix \
     _target_address
   _key_import="$( \
@@ -813,11 +887,27 @@ _output_prefix_auto_detect() {
     _get \
       "target" \
       "address")"
+  _target_key="$( \
+    _get \
+      "target" \
+      "key")"
   _output_prefix=""
   if [[ "${_key_import}" == "n" ]]; then
-    _output_prefix="$( \
-      pwd)/${_target_address}.${_target_key}.key"
+    _base_prefix="$( \
+      pwd)"
+  elif [[ "${_key_import}" == "y" ]]; then
+    _base_prefix="${HOME}/.cache/evm-openpgp-keyserver/receive"
   fi
+  if [[ "${_target_address}" != "" ]]; then
+    if [[ "${_target_key}" != "" ]]; then
+      _key_basename="${_target_address}.${_target_key}"
+    elif [[ "${_target_key}" == "" ]]; then
+      _key_basename="${_target_address}"
+    fi
+  elif [[ "${_target_address}" == "" ]]; then
+    _key_basename="<target_address>.<target_key>.key"
+  fi
+  _output_prefix="${_base_prefix}/${_key_basename}"
   _set_override \
     "output" \
     "prefix" \
@@ -826,7 +916,12 @@ _output_prefix_auto_detect() {
 
 _set_overrides() {
   local \
+    _target_address \
     _target_key
+  _target_address="$( \
+    _get \
+      "target" \
+      "address")"
   _target_key="$( \
     _get \
       "target" \
@@ -887,6 +982,10 @@ _set_overrides() {
     "home" \
     "${HOME}/.gnupg"
   _key_import_auto_detect
+  _set_override \
+    "target" \
+    "publisher" \
+    "${_target_address}"
   _input_type_auto_detect
   _output_prefix_auto_detect
 }
@@ -956,8 +1055,12 @@ $(_display_networks \
      -t <input_type>        It can be 'fingerprint' or
                             'number'.
                             Default: $(_get "input" "type")
-     -f                     Don't import the keys but save
-                            them to file
+     -f <y/n>               Save the keys to file without
+                            importing them into the keystore.
+                            Defaults to 'y' if the GNUPG
+                            configuration directory
+                            is not the default user one,
+                            'n' otherwise.
                             Default: $(_get "key" "import")
      -o                     Output key prefix.
                             Default: $(_get "output" "prefix")
@@ -1026,12 +1129,13 @@ _show_config() {
   _msg_info "                  API key:   $(_get "api" "key")"
   _msg_info "          Cache directory:   $(_get "cache" "dir")"
   _msg_info "               Input type:   $(_get "input" "type")"
-  _msg_info "               Upload key:   $(_get "key" "upload")"
+  _msg_info "               Import key:   $(_get "key" "import")"
+  _msg_info "     GnuPG home directory:   $(_get "gnupg" "home")"
   _msg_info "         Target publisher:   $(_get "target" "publisher")"
   _msg_info "           Target address:   $(_get "target" "address")"
   _msg_info "               Target key:   $(_get "target" "key")"
   _msg_info "          Key fingerprint:   $(_get "key" "fingerprint")"
-  _msg_info "              Output file:   $(_get "output" "file")"
+  _msg_info "        Output key prefix:   $(_get "output" "prefix")"
 }
 
 _globals
@@ -1044,7 +1148,7 @@ _config_user_init \
 # shellcheck disable=SC2034
 while \
   getopts \
-    'A:V:ud:N:w:p:s:n:k:H:t:C:P:cvh?' \
+    'A:V:ud:N:w:p:s:n:k:H:t:f:C:P:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -1060,6 +1164,7 @@ while \
     k) override_api_key="${OPTARG}" ;;
     H) override_gnupg_home="${OPTARG}" ;;
     t) override_input_type="${OPTARG}" ;;
+    f) override_key_import="${OPTARG}" ;;
     C) override_cache_dir="${OPTARG}" ;;
     P) override_target_publisher="${OPTARG}" ;;
     c) override_color="y" ;;
@@ -1096,8 +1201,8 @@ if (( 0 < $# )); then
 fi
 if (( $# < 2 )); then
   _msg=(
-    "no target key given"
-    "getting all of them"
+    "no target key given,"
+    "getting all of them."
   )
   _msg_warning \
     "${_msg[*]}"
@@ -1151,23 +1256,26 @@ app_opts=(
        "input" \
        "type")"
   "$(_get \
+       "key" \
+       "import")"
+  "$(_get \
+       "gnupg" \
+       "home")"
+  "$(_get \
        "target" \
-       "key")"
+       "publisher")"
   "$(_get \
        "target" \
        "address")"
   "$(_get \
        "target" \
-       "uri")"
+       "key")"
   "$(_get \
        "key" \
        "fingerprint")"
   "$(_get \
-       "key" \
-       "name")"
-  "$(_get \
-       "key" \
-       "email")"
+       "output" \
+       "prefix")"
 )
 _evm_openpgp_key_receive \
   "${app_opts[@]}"
