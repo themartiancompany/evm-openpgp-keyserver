@@ -62,6 +62,8 @@ _requirements() {
     'evm-wallet'
   _check_cmd \
     'evmfs'
+  _check_cmd \
+    'gpg-key-info'
 }
 
 _get_conf_dir_path() {
@@ -149,158 +151,6 @@ _key_download() {
       "${_uri}"
 }
 
-_key_check_() {
-  local \
-    _cache_dir \
-    _gnupg_home \
-    _email \
-    _input_type \
-    _fingerprint \
-    _key \
-    _uri \
-    _name \
-    _gpg_key_info_opts=() \
-    _msg=()
-  _uri=""
-  _cache_dir="$( \
-    _get \
-      "cache" \
-      "dir")"
-  _key="$( \
-    _get \
-      "target" \
-      "key")"
-  _gnupg_home="$( \
-    _get \
-      "gnupg" \
-      "home")"
-  _input_type="$( \
-    _get \
-      "input" \
-      "type")"
-  _gpg_key_info_opts+=(
-    -H
-      "${_gnupg_home}"
-  )
-  if [[ "${_input_type}" == "fingerprint" ]]; then
-    _msg=(
-      "exporting the key from the keystore"
-      "in '${_gnupg_home}'"
-    )
-    _msg_info \
-      "${_msg[*]}"
-    mkdir \
-      -p \
-      "${_cache_dir}"
-    _key_retrieve_keystore \
-      "${_key}" \
-      "${_gnupg_home}" \
-      "${_cache_dir}/temp.asc"
-    _key="${_cache_dir}/temp.asc"
-  elif [[ "${_input_type}" == "evmfs" ]]; then
-    mkdir \
-      -p \
-      "${_cache_dir}"
-    _key_retrieve_evmfs \
-      "${_key}" \
-      "${_cache_dir}/temp.asc"
-    _uri="${_key}"
-    _key="${_cache_dir}/temp.asc"
-  fi
-  _fingerprint="$( \
-    gpg-key-info \
-      "${_gpg_key_info_opts[@]}" \
-      -o \
-        "fingerprint" \
-      "${_key}")"
-  if [[ "${_fingerprint}" == "" ]]; then
-    _msg_error \
-      "no fingerprint found" \
-      1
-  fi
-  _name="$( \
-    gpg-key-info \
-      "${_gpg_key_info_opts[@]}" \
-      -o \
-        "name" \
-      "${_key}")"
-  if [[ "${_name}" == "" ]]; then
-    _msg=(
-      "the key '${_key}' has no names"
-      "associated to it"
-    )
-    _msg_warning \
-      "${_msg[*]}"
-  fi
-  _email="$( \
-    gpg-key-info \
-      "${_gpg_key_info_opts[@]}" \
-      -o \
-        "email" \
-      "${_key}")"
-  if [[ "${_email}" == "" ]]; then
-    _msg=(
-      "the key '${_key}' has no emails"
-      "associated to it"
-    )
-    _msg_error \
-      "${_msg[*]}" \
-      1
-  fi
-  _set \
-    "target" \
-    "key" \
-    "${_key}"
-  _set \
-    "target" \
-    "uri" \
-    "${_uri}"
-  _set_override \
-    "key" \
-    "fingerprint" \
-    "${_fingerprint}"
-  _set_override \
-    "key" \
-    "name" \
-    "${_name}"
-  _set_override \
-    "key" \
-    "email" \
-    "${_email}"
-}
-
-_target_key_check() {
-  local \
-    _input_type \
-    _target_key \
-    _msg=()
-  _input_type="$( \
-    _get \
-      "input" \
-      "type")"
-  _target_key="$( \
-    _get \
-      "target" \
-      "key")"
-  if [[ "${_input_type}" == "file" ]]; then
-    if [[ ! -e "${_target_key}" ]]; then
-      _msg=(
-        "key file '${_target_key}'"
-        "does not exist."
-      )
-      _msg_error \
-        "${_msg[*]}" \
-        1
-    elif [[ -e "${_target_key}" ]]; then
-      _set \
-        "target" \
-        "key" \
-        "$(realpath \
-             "${_target_key}")"
-    fi
-  fi
-}
-
 _keys_amount_get() {
   evm-contract-call \
     "${_keys_amount_call_opts[@]}" \
@@ -350,8 +200,10 @@ _keys_receive() {
     _keys=() \
     _keys_amount \
     _keys_amount_call_opts=() \
+    _key_files=() \
     _work_dir \
-    _uri
+    _uri \
+    _uris=()
   _work_dir="${_cache_dir}/receive"
   mkdir \
     -p \
@@ -410,28 +262,26 @@ _keys_receive() {
     _uri="$( \
       _uri_key_get \
         "${_key}")"
+    _uris+=(
+      "${_uri}"
+    )
   done
-  if [[]]; then
-  fi
-  evm-contract-call \
-    "${_publish_call_opts[@]}" \
-    "${_ks_address}" \
-    "readKey" \
-    "${_address}" \
-    "${_publisher}" \
-    "${_fingerprint}" \
-    "${_uri}"
-  _msg=(
-    "key '${_key}' pointing to URI '${_uri}'"
-    "correctly published for user '${_address}'"
-    "by publisher '${_namespace}'"
-  )
-  _msg_info \
-    "${_msg[*]}"
-  _key_address_check \
-    "${_target_address}" \
-    "${_key_email}"
-
+  for _uri in $(seq \
+                  0 \
+                  "$(( "${#_uris[@]}" - 1))"); do
+    _key_file="${_work_dir}/${_out_prefix}.${_keys[${_uri}]}"
+    _key_download \
+      "${_uris[${_uri}]}" \
+      "${_key_file}"
+    _key_files+=(
+      "${_key_file}"
+    )
+  done
+  for _key in "${_key_files[@]}"; do
+    _key_address_check \
+      "${_key}" \
+      "${_address}"
+  done
 }
 
 _abi_get() {
@@ -466,16 +316,22 @@ _compiler_output_get() {
 
 _key_address_check() {
   local \
-    _address="${1}" \
-    _email="${2}" \
+    _key="${1}" \
+    _address="${2}" \
     _domain \
     _msg=()
+  _email="$( \
+    gpg-key-info \
+      -o \
+        "email" \
+      "${_key}")"
   _domain="${_email#*@}"
   if [[ "${_address}" != "${_domain}" ]]; then
     _msg=(
       "the target address '${_address}'"
       "does not correspond to domain '${_domain}'"
-      "for email '${_email}'"
+      "of identifier '${_email}'"
+      "for key '${_key}'"
     )
     _msg_error \
       "${_msg[*]}" \
@@ -502,6 +358,7 @@ _evm_openpgp_key_receive() {
     _key_fingerprint="${15}" \
     _key_import="${16}" \
     _output_prefix="${17}" \
+    _key_files=() \
     _msg=() \
     _download_all \
     _ks_abi \

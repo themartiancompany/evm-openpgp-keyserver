@@ -62,6 +62,8 @@ _requirements() {
     'evm-wallet'
   _check_cmd \
     'evmfs'
+  _check_cmd \
+    'gpg-key-info'
 }
 
 _get_conf_dir_path() {
