@@ -183,6 +183,7 @@ _key_fingerprint_get() {
     "${_publisher}" \
     "${_fingerprint}"
 }
+
 _keys_receive() {
   local \
     _target_network="${1}" \
@@ -191,20 +192,24 @@ _keys_receive() {
     _address="${4}" \
     _fingerprint="${5}" \
     _key="${6}" \
-    _abi="${9}" \
-    _bytecode="${10}" \
-    _compiler_output="${11}" \
+    _output_prefix="${7}" \
+    _abi="${8}" \
+    _bytecode="${9}" \
+    _compiler_output="${10}" \
     _msg=() \
     _evm_contract_call_opts=() \
     _evmfs_opts=() \
     _keys=() \
     _keys_amount \
     _keys_amount_call_opts=() \
-    _key_files=() \
     _work_dir \
+    _output_prefix_basename \
     _uri \
     _uris=()
   _work_dir="${_cache_dir}/receive"
+  _output_prefix_basename="$( \
+    basename \
+      "${_output_prefix}")"
   mkdir \
     -p \
     "${_work_dir}"
@@ -232,12 +237,12 @@ _keys_receive() {
         "$(( "${_keys_amount}" - 1))")
     )
   elif [[ "${_key}" != "" ]] && \
-       [[ "${_fingerprint}" == "" ]]; then;
+       [[ "${_fingerprint}" == "" ]]; then
     _keys+=(
       "${_key}"
     )
   elif [[ "${_fingerprint}" != "" ]] && \
-       [[ "${_key}" == "" ]]; then;
+       [[ "${_key}" == "" ]]; then
     _key="$( \
       _key_fingerprint_get \
         "${_fingerprint}")"
@@ -269,7 +274,7 @@ _keys_receive() {
   for _uri in $(seq \
                   0 \
                   "$(( "${#_uris[@]}" - 1))"); do
-    _key_file="${_work_dir}/${_out_prefix}.${_keys[${_uri}]}"
+    _key_file="${_work_dir}/${_output_prefix_basename}.${_keys[${_uri}]}"
     _key_download \
       "${_uris[${_uri}]}" \
       "${_key_file}"
@@ -339,6 +344,18 @@ _key_address_check() {
   fi
 }
 
+_keys_move() {
+  local \
+    _output_prefix="${1}" \
+    _output_prefix_dirname
+  _output_prefix_dirname="$( \
+    dirname \
+      "${_output_prefix}")"
+  mv \
+    "${_key_files[@]}" \
+    "${_output_prefix_dirname}"
+}
+
 _evm_openpgp_key_receive() {
   local \
     _ks_address="${1}" \
@@ -360,7 +377,6 @@ _evm_openpgp_key_receive() {
     _output_prefix="${17}" \
     _key_files=() \
     _msg=() \
-    _download_all \
     _ks_abi \
     _ks_bytecode \
     _ks_compiler_output
@@ -369,7 +385,6 @@ _evm_openpgp_key_receive() {
   _command_args+=(
     "$@"
   )
-  _download_all="false"
   if [[ "${_target_publisher}" == "" ]]; then
     _target_publisher="${_target_address}"
     _msg=(
@@ -426,10 +441,17 @@ _evm_openpgp_key_receive() {
     "${_target_address}" \
     "${_key_fingerprint}" \
     "${_target_key}" \
+    "${_output_prefix}" \
     "${_ks_abi}" \
     "${_ks_bytecode}" \
     "${_ks_compiler_output}"
-  _keys_import
+  if [[ "${_key_import}" == "y" ]]; then
+    _keys_import \
+      "${_output_prefix}"
+  elif [[ "${_key_import}" == "n" ]]; then
+    _keys_move \
+      "${_output_prefix}"
+  fi
 }
 
 _wallet_path_get() {
@@ -768,9 +790,9 @@ _key_import_auto_detect() {
     _get \
       "gnupg" \
       "home")"
-  _import="true"
+  _import="y"
   if [[ "${_gnupg_home}" == "${HOME}/.gnupg" ]]; then
-    _import="false"
+    _import="n"
   fi
   _set_override \
     "key" \
@@ -1036,7 +1058,7 @@ while \
     s) override_wallet_seed="${OPTARG}" ;;
     n) override_target_network="${OPTARG}" ;;
     k) override_api_key="${OPTARG}" ;;
-    H) override_gpg_home="${OPTARG}" ;;
+    H) override_gnupg_home="${OPTARG}" ;;
     t) override_input_type="${OPTARG}" ;;
     C) override_cache_dir="${OPTARG}" ;;
     P) override_target_publisher="${OPTARG}" ;;
