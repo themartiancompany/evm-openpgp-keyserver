@@ -80,7 +80,7 @@ _cache_dir_auto_detect() {
     "${_dir}"
 }
 
-_key_upload() {
+_key_evmfs_upload() {
   local \
     _key="${1}"
   evmfs \
@@ -132,6 +132,12 @@ _opts_setup() {
       "${_wallet_name}"
     -k
       "${_api_key_path}"
+    -w
+      "${_wallet_path}"
+    -s
+      "${_wallet_seed}"
+    -p
+      "${_wallet_password}"
   )
   _publish_call_opts+=(
     "${_evm_contract_call_opts[@]}"
@@ -140,7 +146,6 @@ _opts_setup() {
   )
   _evmfs_publish_opts+=(
     "${_evmfs_opts[@]}"
-    "${_key}"
   )
   _evmfs_call_opts+=(
     "${_evmfs_opts[@]}"
@@ -182,15 +187,15 @@ _key_publish() {
   _msg_info \
     "${_msg[*]}"
   if [[ "${_upload}" == "y" ]]; then
-    _key_upload \
+    _key_evmfs_upload \
       "${_key}"
   fi
   evm-contract-call \
     "${_publish_call_opts[@]}" \
     "${_ks_address}" \
     "publishKey" \
-    "${_namespace}" \
     "${_address}" \
+    "${_namespace}" \
     "${_fingerprint}" \
     "${_uri}"
   _msg=(
@@ -348,8 +353,8 @@ _evm_openpgp_key_publish() {
     "${_namespace}" \
     "${_target_address}" \
     "${_key_fingerprint}" \
-    "${_target_file}" \
-    "${_target_uri}"
+    "${_target_key}" \
+    "${_target_uri}" \
     "${_key_upload}" \
     "${_ks_abi}" \
     "${_ks_bytecode}" \
@@ -379,8 +384,7 @@ _secret_get() {
     _get \
       "wallet" \
       "name")"
-  _path="$( \
-    _get_conf_dir_path)/${_name}-${_secret}.txt"
+  _path="${HOME}/.config/evm-wallet/${_name}-${_secret}.txt"
   echo \
     "${_path}"
 }
@@ -694,15 +698,13 @@ _key_retrieve_evmfs() {
   local \
     _uri="${1}" \
     _output_file="${2}" \
-    _network \
-    _name \
     _api \
+    _name \
+    _network \
+    _password \
+    _seed \
+    _wallet \
     _evmfs_opts=()
-  if [[ "${quiet}" == "n" ]]; then
-    _evmfs_opts+=(
-      -v
-    )
-  fi
   _msg=(
     "downloading in '${_output_file}' the key"
     "at URI '${_uri}'."
@@ -717,6 +719,18 @@ _key_retrieve_evmfs() {
     _get \
       "wallet" \
       "name")"
+  _wallet="$( \
+    _get \
+      "wallet" \
+      "path")"
+  _password="$( \
+    _get \
+      "wallet" \
+      "password")"
+  _seed="$( \
+    _get \
+      "wallet" \
+      "seed")"
   _api="$( \
     _get \
       "api" \
@@ -726,15 +740,53 @@ _key_retrieve_evmfs() {
       "${_network}"
     -N
       "${_name}"
+    -w
+      "${_wallet}"
+    -s
+      "${_seed}"
+    -p
+      "${_password}"
     -k
       "${_api}"
     -o
       "${_output_file}"
   )
   evmfs \
-    "${_evmfs_opts[@]}"
+    "${_evmfs_opts[@]}" \
     get \
       "${_uri}"
+}
+
+_target_key_check() {
+  local \
+    _input_type \
+    _target_key \
+    _msg=()
+  _input_type="$( \
+    _get \
+      "input" \
+      "type")"
+  _target_key="$( \
+    _get \
+      "target" \
+      "key")"
+  if [[ "${_input_type}" == "file" ]]; then
+    if [[ ! -e "${_target_key}" ]]; then
+      _msg=(
+        "key file '${_target_key}'"
+        "does not exist."
+      )
+      _msg_error \
+        "${_msg[*]}" \
+        1
+    elif [[ -e "${_target_key}" ]]; then
+      _set \
+        "target" \
+        "key" \
+        "$(realpath \
+             "${_target_key}")"
+    fi
+  fi
 }
 
 _key_data_auto_detect() {
@@ -797,7 +849,7 @@ _key_data_auto_detect() {
   fi
   _fingerprint="$( \
     gpg-key-info \
-      "${_gpg_key_info_opts[@]}"
+      "${_gpg_key_info_opts[@]}" \
       -o \
         "fingerprint" \
       "${_key}")"
@@ -808,7 +860,7 @@ _key_data_auto_detect() {
   fi
   _name="$( \
     gpg-key-info \
-      "${_gpg_key_info_opts[@]}"
+      "${_gpg_key_info_opts[@]}" \
       -o \
         "name" \
       "${_key}")"
@@ -822,7 +874,7 @@ _key_data_auto_detect() {
   fi
   _email="$( \
     gpg-key-info \
-      "${_gpg_key_info_opts[@]}"
+      "${_gpg_key_info_opts[@]}" \
       -o \
         "email" \
       "${_key}")"
@@ -885,7 +937,35 @@ _key_upload_auto_detect() {
     "${_upload}"
 }
 
+_input_type_auto_detect() {
+  local \
+    _target_key \
+    _input_type
+  _target_key="$( \
+    _get \
+      "target" \
+      "key")"
+  _input_type="fingerprint"
+  if [[ "${_target_key}" != "" ]]; then
+    if [[ -e "${_target_key}" ]]; then
+      _input_type="file"
+    elif [[ "${_target_key}" == "evmfs://"* ]]; then
+      _input_type="evmfs"
+    fi
+  fi
+  _set_override \
+    "input" \
+    "type" \
+    "${_input_type}"
+}
+
 _set_overrides() {
+  local \
+    _target_key
+  _target_key="$( \
+    _get \
+      "target" \
+      "key")"
   if [[ -v override_quiet ]]; then
     quiet="${override_quiet}"
   elif [[ -z "${quiet}" ]]; then
@@ -941,18 +1021,19 @@ _set_overrides() {
     "gnupg" \
     "home" \
     "${HOME}/.gnupg"
-  _set_override \
-    "input" \
-    "type" \
-    "file"
+  _input_type_auto_detect
   _key_upload_auto_detect
-  _key_data_auto_detect
+  if [[ "${_target_key}" != "" ]]; then
+    _target_key_check
+    _key_data_auto_detect
+  fi
 }
 
 # Show help usage, with an exit status.
 # $1: exit status number.
 _usage() {
   local \
+    _exit="${1}" \
     _contract \
     _ks_deployment \
     _networks \
@@ -1029,7 +1110,7 @@ ENDUSAGETEXT
     '%s\n' \
     "${_usage_text}"
   exit \
-    "${1}"
+    "${_exit}"
 }
 
 _display_flags() {
@@ -1139,7 +1220,7 @@ shift \
   ))
 if (( $# < 1 )); then
   _msg_error \
-    "no input address given" \
+    "no target address given" \
     0
   _set_overrides
   _usage \
@@ -1153,7 +1234,7 @@ if (( 0 < $# )); then
 fi
 if (( $# < 2 )); then
   _msg_error \
-    "no key or fingerprint given" \
+    "no target key given" \
     0
   _set_overrides
   _usage \
@@ -1163,8 +1244,7 @@ if (( 1 < $# )); then
   _set \
     "target" \
     "key" \
-    "$(realpath \
-         "${2}")"
+    "${2}"
 fi
 shift \
   1 || \
@@ -1230,7 +1310,7 @@ app_opts=(
        "key" \
        "email")"
 )
-# _evm_openpgp_key_publish \
-#   "${app_opts[@]}"
+_evm_openpgp_key_publish \
+  "${app_opts[@]}"
 
 # vim:set sw=2 sts=-1 et:
