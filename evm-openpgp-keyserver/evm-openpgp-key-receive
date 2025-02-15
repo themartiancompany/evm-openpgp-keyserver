@@ -1053,6 +1053,9 @@ $(_display_networks \
                             Default: $(_get "target" "network")
      -k <api_key>           Etherscan-like service key.
                             Default: $(_get "api" "key")
+     -P <publisher>         Key publisher.
+                            Default: $(_get "target" "publisher")
+
      -H <gnupg_home>        GnuPG configuration directory.
                             Default: $(_get "gnupg" "home")
      -t <input_type>        It can be 'fingerprint' or
