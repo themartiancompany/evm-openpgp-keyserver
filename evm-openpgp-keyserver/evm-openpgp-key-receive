@@ -1028,47 +1028,47 @@ $(_display_networks \
   options:
      -A <ks_address>        Address of the EVM OpenPGP Key Server
                             on the network.
-                            Default: $(_get "ks" "address")
+                            Default: ${ks_address}
      -V <ks_version>        Version of the target EVM OpenPGP Key
                             Server.
-                            Default: $(_get "ks" "version")
+                            Default: ${ks_version}
      -u                     Whether to retrieve key server
                             address from user directory or from
                             a custom deployment.
-                            Default: $(_get "user" "level")
+                            Default: ${user_level}
      -d <deployments_dir>   Contracts deployments directory.
-                            Default: $(_get "deployments" "dir")
+                            Default: ${deployments_dir}
      -N <wallet_name>       Wallet name.
-                            Default: $(_get "wallet" "name")
+                            Default: ${wallet_name}
      -w <wallet_path>       Wallet path.
-                            Default: $(_get "wallet" "path")
+                            Default: ${wallet_path}
      -p <wallet_password>   Wallet password.
-                            Default: $(_get "wallet" "password")
+                            Default: ${wallet_password}
      -s <wallet_seed>       Wallet seed path.
-                            Default: $(_get "wallet" "seed")
+                            Default: ${wallet_seed}
      -n <network>           EVM network name (${_networks[*]}).
-                            Default: $(_get "target" "network")
+                            Default: ${target_network}
      -k <api_key>           Etherscan-like service key.
-                            Default: $(_get "api" "key")
+                            Default: ${api_key}
      -P <publisher>         Key publisher.
-                            Default: $(_get "target" "publisher")
+                            Default: ${target_publisher}
 
      -H <gnupg_home>        GnuPG configuration directory.
-                            Default: $(_get "gnupg" "home")
+                            Default: ${gnupg_home}
      -t <input_type>        It can be 'fingerprint' or
                             'number'.
-                            Default: $(_get "input" "type")
+                            Default: ${input_type}
      -f <y/n>               Save the keys to file without
                             importing them into the keystore.
                             Defaults to 'y' if the GNUPG
                             configuration directory
                             is not the default user one,
                             'n' otherwise.
-                            Default: $(_get "key" "import")
+                            Default: ${key_import}
      -o                     Output key prefix.
-                            Default: $(_get "output" "prefix")
+                            Default: ${output_prefix}
      -C <cache_dir>         Work directory
-                            Default: $(_get "cache" "dir")
+                            Default: ${cache_dir}
 
      -h                     This message.
      -c                     Enable color output
@@ -1118,27 +1118,27 @@ _display_networks() {
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
-  _msg_info "             Receive date:   $(_get "receive" "date")"
-  _msg_info "       Key server address:   $(_get "ks" "address")"
-  _msg_info "       Key server version:   $(_get "ks" "version")"
-  _msg_info "               User level:   $(_get "user" "level")"
-  _msg_info "    Deployments directory:   $(_get "deployments" "dir")"
-  _msg_info "                Publisher:   $(_get "wallet" "address")"
-  _msg_info "              Wallet name:   $(_get "wallet" "name")"
-  _msg_info "              Wallet path:   $(_get "wallet" "path")"
-  _msg_info "          Wallet password:   $(_get "wallet" "password")"
-  _msg_info "              Wallet seed:   $(_get "wallet" "seed")"
-  _msg_info "           Target network:   $(_get "target" "network")"
-  _msg_info "                  API key:   $(_get "api" "key")"
-  _msg_info "          Cache directory:   $(_get "cache" "dir")"
-  _msg_info "               Input type:   $(_get "input" "type")"
-  _msg_info "               Import key:   $(_get "key" "import")"
-  _msg_info "     GnuPG home directory:   $(_get "gnupg" "home")"
-  _msg_info "         Target publisher:   $(_get "target" "publisher")"
-  _msg_info "           Target address:   $(_get "target" "address")"
-  _msg_info "               Target key:   $(_get "target" "key")"
-  _msg_info "          Key fingerprint:   $(_get "key" "fingerprint")"
-  _msg_info "        Output key prefix:   $(_get "output" "prefix")"
+  _msg_info "             Receive date:   ${receive_date}"
+  _msg_info "       Key server address:   ${ks_address}"
+  _msg_info "       Key server version:   ${ks_version}"
+  _msg_info "               User level:   ${user_level}"
+  _msg_info "    Deployments directory:   ${deployments_dir}"
+  _msg_info "                Publisher:   ${wallet_address}"
+  _msg_info "              Wallet name:   ${wallet_name}"
+  _msg_info "              Wallet path:   ${wallet_path}"
+  _msg_info "          Wallet password:   ${wallet_password}"
+  _msg_info "              Wallet seed:   ${wallet_seed}"
+  _msg_info "           Target network:   ${target_network}"
+  _msg_info "                  API key:   ${api_key}"
+  _msg_info "          Cache directory:   ${cache_dir}"
+  _msg_info "               Input type:   ${input_type}"
+  _msg_info "               Import key:   ${key_import}"
+  _msg_info "     GnuPG home directory:   ${gnupg_home}"
+  _msg_info "         Target publisher:   ${target_publisher}"
+  _msg_info "           Target address:   ${target_address}"
+  _msg_info "               Target key:   ${target_key}"
+  _msg_info "          Key fingerprint:   ${key_fingerprint}"
+  _msg_info "        Output key prefix:   ${output_prefix}"
 }
 
 _globals
@@ -1225,60 +1225,24 @@ command_args+=(
 _set_overrides
 _show_config
 app_opts=(
-  "$(_get \
-       "ks" \
-       "address")"
-  "$(_get \
-       "ks" \
-       "version")"
-  "$(_get \
-       "deployments" \
-       "dir")"
-  "$(_get \
-       "wallet" \
-       "name")"
-  "$(_get \
-       "wallet" \
-       "path")"
-  "$(_get \
-       "wallet" \
-       "password")"
-  "$(_get \
-       "wallet" \
-       "seed")"
-  "$(_get \
-       "target" \
-       "network")"
-  "$(_get \
-       "api" \
-       "key")"
-  "$(_get \
-       "cache" \
-       "dir")"
-  "$(_get \
-       "input" \
-       "type")"
-  "$(_get \
-       "key" \
-       "import")"
-  "$(_get \
-       "gnupg" \
-       "home")"
-  "$(_get \
-       "target" \
-       "publisher")"
-  "$(_get \
-       "target" \
-       "address")"
-  "$(_get \
-       "target" \
-       "key")"
-  "$(_get \
-       "key" \
-       "fingerprint")"
-  "$(_get \
-       "output" \
-       "prefix")"
+  "${ks_address}"
+  "${ks_version}"
+  "${deployments_dir}"
+  "${wallet_name}"
+  "${wallet_path}"
+  "${wallet_password}"
+  "${wallet_seed}"
+  "${target_network}"
+  "${api_key}"
+  "${cache_dir}"
+  "${input_type}"
+  "${key_import}"
+  "${gnupg_home}"
+  "${target_publisher}"
+  "${target_address}"
+  "${target_key}"
+  "${key_fingerprint}"
+  "${output_prefix}"
 )
 _evm_openpgp_key_receive \
   "${app_opts[@]}"
