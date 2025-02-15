@@ -64,6 +64,9 @@ _requirements() {
     'evmfs'
   _check_cmd \
     'gpg-key-info'
+  _check_cmd \
+    'gpg' \
+    'gnupg'
 }
 
 _get_conf_dir_path() {
