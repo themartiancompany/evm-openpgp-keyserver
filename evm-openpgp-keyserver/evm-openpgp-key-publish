@@ -27,9 +27,17 @@ _bin="$( \
       command \
         -v \
 	  "env")")"
-_lib="${_bin}/../lib"
-source \
-  "${_lib}/libcrash-bash/crash-bash"
+_lib="$( \
+  realpath \
+    "${_bin}/../lib")"
+_crash_bash="${_lib}/libcrash-bash/crash-bash"
+_libevm="${_lib}/libevm/libevm"
+_sourced \
+  "${_crash_bash}" 2>/dev/null || \
+  source \
+    "${_crash_bash}"
+_sourced \
+  "${_libevm}"
 
 # shellcheck disable=SC2034
 _global_variables() {
@@ -114,8 +122,8 @@ _key_evmfs_upload() {
       publish \
         "${_key}")"
   _msg=(
-    "key '${_key}' correctly uploaded,"
-    "target URI set to '${_uri}'"
+    "Key '${_key}' correctly uploaded,"
+    "target URI set to '${_uri}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -174,8 +182,8 @@ _opts_setup() {
       "simulate"
   )
   _msg=(
-    "evm-contract-call will be called"
-    "with base options '${_evm_contract_call_opts[*]}'"
+    "The EVM contract-caller will be called"
+    "with base options '${_evm_contract_call_opts[*]}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -200,10 +208,10 @@ _key_publish() {
     _publish_call_opts=()
   _opts_setup
   _msg=(
-    "user '${_namespace}'"
+    "User '${_namespace}'"
     "publishing key '${_key}'"
     "with fingerprint '${_fingerprint}'"
-    "for address '${_address}'"
+    "for address '${_address}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -220,42 +228,12 @@ _key_publish() {
     "${_fingerprint}" \
     "${_uri}"
   _msg=(
-    "key '${_key}' pointing to URI '${_uri}'"
+    "Key '${_key}' pointing to URI '${_uri}'"
     "correctly published for user '${_address}'"
-    "by publisher '${_namespace}'"
+    "by publisher '${_namespace}'."
   )
   _msg_info \
     "${_msg[*]}"
-}
-
-_abi_get() {
-  local \
-    _deployments="${1}" \
-    _network="${2}" \
-    _name="${3}" \
-    _version="${4}"
-  echo \
-    "${_deployments}/${_name}/${_network}/${_version}/${_name}.abi.json"
-}
-
-_bytecode_get() {
-  local \
-    _deployments="${1}" \
-    _network="${2}" \
-    _name="${3}" \
-    _version="${4}"
-  echo \
-    "${_deployments}/${_name}/${_network}/${_version}/${_name}.bin"
-}
-
-_compiler_output_get() {
-  local \
-    _deployments="${1}" \
-    _network="${2}" \
-    _name="${3}" \
-    _version="${4}"
-  echo \
-    "${_deployments}/${_name}/${_network}/${_version}/${_name}.json"
 }
 
 _key_address_check() {
@@ -267,9 +245,9 @@ _key_address_check() {
   _domain="${_email#*@}"
   if [[ "${_address}" != "${_domain}" ]]; then
     _msg=(
-      "the target address '${_address}'"
+      "The target address '${_address}'"
       "does not correspond to domain '${_domain}'"
-      "for email '${_email}'"
+      "for email '${_email}'."
     )
     _msg_error \
       "${_msg[*]}" \
@@ -316,8 +294,8 @@ _evm_openpgp_key_publish() {
        "address")"
   if [[ "${_namespace}" != "${_target_address}" ]]; then
     _msg=(
-      "user '${_namespace}' publishing"
-      "key for user '${_target_address}'"
+      "User '${_namespace}' publishing"
+      "key for user '${_target_address}'."
     )
     _msg_info \
       "${_msg[*]}"
@@ -330,7 +308,7 @@ _evm_openpgp_key_publish() {
       "key address does not belong to your"
       "EVMfs namespace this will re-upload"
       "it in there. If you are trying to confirm"
-      "another user key run $(_get "app" "name")"
+      "another user key run ${app_name}"
       "with the -S option"
     )
     _msg_warning \
@@ -345,29 +323,17 @@ _evm_openpgp_key_publish() {
       "EVMfs namespace this will produce a dead link."
       "Please double check you have already uploaded"
       "the key on your namespace or run"
-      "$(_get "app" "name") without the -S option"
+      "${app_name} without the -S option"
     )
     _msg_warning \
       "${_msg[*]}"
   fi
-  _ks_abi="$( \
-    _abi_get \
-      "${_deployments_dir}" \
-      "${_target_network}" \
-      "KeyServer" \
-      "${_ks_version}")"
-  _ks_bytecode="$( \
-    _bytecode_get \
-      "${_deployments_dir}" \
-      "${_target_network}" \
-      "KeyServer" \
-      "${_ks_version}")"
-  _ks_compiler_output="$( \
-    _compiler_output_get \
-      "${_deployments_dir}" \
-      "${_target_network}" \
-      "KeyServer" \
-      "${_ks_version}")"
+  _contract_artifacts_auto_detect \
+    "${_deployments_dir}" \
+    "${_target_network}" \
+    "KeyServer" \
+    "_ks" \
+    "${_ks_version}"
   _key_publish \
     "${_target_network}" \
     "${_ks_address}" \
@@ -380,313 +346,6 @@ _evm_openpgp_key_publish() {
     "${_ks_abi}" \
     "${_ks_bytecode}" \
     "${_ks_compiler_output}"
-}
-
-_wallet_path_get() {
-  local \
-    _path \
-    _name
-  _name="$( \
-    _get \
-      "wallet" \
-      "name")"
-  _path="$( \
-    _get_conf_dir_path)/${_name}.dat"
-  echo \
-    "${_path}"
-}
-
-_secret_get() {
-  local \
-    _secret="${1}" \
-    _path \
-    _name
-  _name="$( \
-    _get \
-      "wallet" \
-      "name")"
-  _path="${HOME}/.config/evm-wallet/${_name}-${_secret}.txt"
-  echo \
-    "${_path}"
-}
-
-_api_key_auto_detect() {
-  local \
-    _chain="${1}" \
-    _chain_name \
-    _key \
-    _msg=()
-  _key="$( \
-    evm-chains-explorers \
-      -c \
-        "${_chain}" \
-      -s \
-        'kirsh' \
-      get \
-        keys)"
-  _chain_name="$( \
-    evm-chains-info \
-      -o \
-        "name" \
-      "${_chain}")"
-  if [[ ! -e "${_key}" ]]; then
-    _msg=(
-      "Found no provider services"
-      "keys for chain '${_chain_name}'."
-      "Check available service"
-      "providers with \"evm-chains-info"
-      "-o explorers '${_chain}'\""
-      "and add the relative api key in"
-      "'<user_home>/.config/evm-chains-explorers/<service>/default.txt'"
-    )
-    _msg_info \
-      "${_msg[*]}"
-  fi
-  _set_override \
-    "api" \
-    "key" \
-    "${_key}"
-}
-
-_secret_auto_detect() {
-  local \
-    _secret="${1}" \
-    _secret_type="${2}" \
-    _dir \
-    _key_gen_opts=() \
-    _msg=()
-  _path="$( \
-    _secret_get \
-      "${_secret}")"
-  _dir="$( \
-    dirname \
-      "${_path}")"
-  if [[ ! -e "${_path}" ]]; then
-    _key_gen_opts+=(
-      -t
-        "${_secret_type}"
-    )
-    _msg=(
-      "generating ${_secret} '${_path}'"
-    )
-    if [[ "${quiet}" == "n" ]]; then
-      _msg_info \
-        "${_msg[*]}"
-    fi
-    mkdir \
-      -p \
-      "${_dir}"
-    chmod \
-      700 \
-      "${_dir}"
-    chmod \
-      700 \
-      "${_dir}"
-    key-gen \
-      "${_key_gen_opts[@]}" \
-      "${_path}"
-    chmod \
-      400 \
-      "${_path}"
-    _msg=(
-      "${_secret} '${_path}' successfully generated"
-    )
-    if [[ "${quiet}" == "n" ]]; then
-      _msg_info \
-        "${_msg[*]}"
-    fi
-  fi
-  _set_override \
-    "wallet" \
-    "${_secret}" \
-    "${_path}"
-}
-
-_deployments_dir_auto_detect() {
-  local \
-    _user_level \
-    _evm_contract_deployments_dir_opts=() \
-    _deployments_dir \
-    _system_deployments
-  _user_level="$( \
-    _get \
-      "user" \
-      "level")"
-  if [[ "${_user_level}" == "y" ]]; then
-    _evm_contract_deployments_dir_opts+=(
-      -u
-    )
-  fi
-  _deployments_dir="$( \
-    evm-contract-deployments-dir \
-      "${_evm_contract_deployments_dir_opts[@]}" \
-      "evm-openpgp-keyserver")"
-  if [[ ! -d "${_deployments_dir}" ]]; then
-    _system_deployments="$( \
-     evm-contract-deployments-dir \
-       "evm-openpgp-keyserver")"
-    _msg=(
-      "user deployments directory"
-      "'${_deployments_dir}' does"
-      "not exists, importing system deployments"
-      "directory '${_system_deployments}'"
-    )
-    _msg_info \
-      "${_msg[*]}"
-    mkdir \
-      -p \
-      "${_deployments_dir}"
-    chmod \
-      700 \
-      "${_deployments_dir}"
-    cp \
-     -r \
-     "${_system_deployments}/"* \
-     "${_deployments_dir}"
-  fi
-  _set_override \
-    "deployments" \
-    "dir" \
-    "${_deployments_dir}"
-}
-
-_network_auto_detect() {
-  local \
-    _contract \
-    _contract_deployment \
-    _deployments \
-    _user \
-    _msg=()
-  _contract="KeyServer"
-  _deployments="$( \
-    _get \
-      "deployments" \
-      "dir")"
-  _contract_deployment="${_deployments}/${_contract}"
-  _user="$( \
-    _get \
-      "user" \
-      "level")"
-  if [[ "${_user}" == "y" ]]; then
-    _msg=(
-     "User deployments enabled, looking"
-     "for cheapest network deployments at" 
-     "path '${_contract_deployment}'"
-   )
-   _msg_info \
-     "${_msg[*]}"
-  fi
-  _network="$( \
-    evm-contract-deployment-networks \
-      -C \
-      "${_contract_deployment}")"
-  if [[ "${_user}" == "y" ]]; then
-    _msg=(
-      "Found network '${_network}'"
-    )
-    _msg_info \
-      "${_msg[*]}"
-  fi
-  _set_override \
-    "target" \
-    "network" \
-    "${_network}"
-}
-
-_ks_version_auto_detect() {
-  local \
-    _config \
-    _contract \
-    _deployments \
-    _network \
-    _version
-  _contract="KeyServer"
-  _deployments="$( \
-    _get \
-      "deployments" \
-      "dir")"
-  _network="$( \
-    _get \
-      "target" \
-      "network")"
-  _config="${_deployments}/${_contract}/${_network}/config.sh"
-  _version="$( \
-    evm-contract-deployment-versions \
-      -H \
-      "${_config}")"
-  _set_override \
-    "ks" \
-    "version" \
-    "${_version}"
-}
-
-_ks_address_auto_detect() {
-  local \
-    _address \
-    _contract \
-    _network \
-    _deployments \
-    _user \
-    _version \
-    _evm_contract_deployment_address_opts=() \
-    _msg=()
-  _contract="KeyServer"
-  _network="$( \
-    _get \
-      "target" \
-      "network")"
-  _evm_contract_deployment_address_opts+=(
-    -n
-      "${_network}"
-  )
-  _version="$( \
-    _get \
-      "ks" \
-      "version")"
-  if [[ "${_version}" != "" ]]; then
-    _evm_contract_deployment_address_opts+=(
-      -V
-        "${_version}"
-    )
-  fi
-  _user="$( \
-    _get \
-      "user" \
-      "level")"
-  if [[ "${_user}" == "n" ]]; then
-    _evm_contract_deployment_address_opts+=(
-      -a
-        "evm-openpgp-keyserver"
-    )
-  elif [[ "${_user}" == "y" ]]; then
-    _deployments="$( \
-      _get \
-        "deployments" \
-        "dir")"
-    _evm_contract_deployment_address_opts+=(
-      -u
-      -d
-        "${_deployments}" 
-    )
-  fi
-  _address="$( \
-    evm-contract-deployment-address \
-      "${_evm_contract_deployment_address_opts[@]}" \
-      "${_contract}")"
-  if [[ "${_address}" == "" ]]; then
-    _msg=(
-      "error getting FileSystem version"
-      "${_version} deployment address"
-      "for network '${_network}'"
-    )
-    _msg_error \
-      "${_msg[*]}" \
-      1
-  fi
-  _set_override \
-    "ks" \
-    "address" \
-    "${_address}"
 }
 
 _key_retrieve_keystore() {
@@ -1002,29 +661,38 @@ _set_overrides() {
     "date" \
     "$(_get_date_human)"
   _set_override \
+    "user" \
+    "level" \
+    "n"
+  _deployments_dir_auto_detect \
+    "evm-openpgp-keyserver" \
+    "${user_level}"
+  _network_auto_detect \
+    "KeyServer" \
+    "${deployments_dir}" \
+    "${user_level}"
+  _api_key_auto_detect \
+    "${target_network}"
+  _set_override \
     "wallet" \
     "name" \
     "default"
   _set_override \
-    "user" \
-    "level" \
-    "n"
-  _deployments_dir_auto_detect
-  _network_auto_detect
-  _api_key_auto_detect \
-    "$(_get \
-         "target" \
-         "network")"
-  _set_override \
     "wallet" \
     "path" \
-    "$(_wallet_path_get)"
+    "$(_wallet_path_get \
+         "evm-wallet" \
+         "${wallet_name}")"
   _secret_auto_detect \
     "seed" \
-    "seed"
+    "seed" \
+    "evm-wallet" \
+    "${wallet_name}"
   _secret_auto_detect \
     "password" \
-    "plain"
+    "plain" \
+    "evm-wallet" \
+    "${wallet_name}"
   _set_override \
     "wallet" \
     "address" \
@@ -1036,8 +704,19 @@ _set_overrides() {
     "cache" \
     "dir" \
     "$(_cache_dir_auto_detect)"
-  _ks_version_auto_detect
-  _ks_address_auto_detect
+  _contract_version_auto_detect \
+    "${deployments_dir}" \
+    "KeyServer" \
+    "ks" \
+    "${target_network}"
+  _contract_address_auto_detect \
+    "evm-openpgp-keyserver" \
+    "KeyServer" \
+    "ks" \
+    "${target_network}" \
+    "${ks_version}" \
+    "${user_level}" \
+    "${deployments_dir}"
   _set_override \
     "gnupg" \
     "home" \
