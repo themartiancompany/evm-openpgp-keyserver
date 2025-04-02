@@ -42,19 +42,6 @@ _sourced \
 # shellcheck disable=SC2034
 _global_variables() {
   receive_date=""
-  ks_address=""
-  ks_version=""
-  deployments_dir=""
-  user_level=""
-  wallet_name=""
-  wallet_path=""
-  wallet_password=""
-  wallet_seed=""
-  wallet_address=""
-  target_network=""
-  api_key=""
-  cache_dir=""
-  gnupg_home=""
   input_type=""
   key_import=""
   target_publisher=""
@@ -63,6 +50,10 @@ _global_variables() {
   key_fingerprint=""
   key_import=""
   output_prefix=""
+  ks_address=""
+  ks_version=""
+  cache_dir=""
+  gnupg_home=""
   command_args=()
   color=""
   quiet=""
@@ -158,8 +149,8 @@ _opts_setup() {
     "${_evm_contract_call_opts[@]}"
   )
   _msg=(
-    "evm-contract-call will be called"
-    "with base options '${_evm_contract_call_opts[*]}'"
+    "The EVM contract caller will be run"
+    "with base options '${_evm_contract_call_opts[*]}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -176,7 +167,7 @@ _key_download() {
       "${_output_file}"
   )
   _msg=(
-    "downloading in '${_output_file}' the key"
+    "Downloading in '${_output_file}' the key"
     "at URI '${_uri}'."
   )
   _msg_info \
@@ -253,7 +244,7 @@ _keys_receive() {
   if [[ "${_key}" == "" ]] && \
      [[ "${_fingerprint}" == "" ]]; then
     _msg=(
-      "no target key or fingerprint"
+      "No target key or fingerprint"
       "specified, downloading all"
       "available keys."
     )
@@ -262,8 +253,8 @@ _keys_receive() {
     _keys_amount="$( \
       _keys_amount_get)"
     _msg=(
-      "got a total of '${_keys_amount}'"
-      "keys for address '${_address}'"
+      "Got a total of '${_keys_amount}'"
+      "keys for address '${_address}'."
     )
     _msg_info \
       "${_msg[*]}"
@@ -283,8 +274,8 @@ _keys_receive() {
       _key_fingerprint_get \
         "${_fingerprint}")"
     _msg=(
-      "got key '${_key}' for"
-      "fingerprint '${_fingerprint}'"
+      "Got key '${_key}' for"
+      "fingerprint '${_fingerprint}'."
     )
     _msg_info \
       "${_msg[*]}"
@@ -294,7 +285,7 @@ _keys_receive() {
   fi
   for _key in "${_keys[@]}"; do
     _msg=(
-      "getting publisher '${_publisher}'"
+      "Getting publisher '${_publisher}'"
       "key '${_key}' uri for address"
       "'${_address}'."
     )
@@ -315,14 +306,24 @@ _keys_receive() {
     _key_download \
       "${_uris[${_uri}]}" \
       "${_key_file}"
-    _key_files+=(
-      "${_key_file}"
-    )
-  done
-  for _key in "${_key_files[@]}"; do
     _key_address_check \
-      "${_key}" \
+      "${_key_file}" \
       "${_address}"
+    if [[ "${_passed}" == "false" ]]; then
+      _msg=(
+        "Key '${_key_file}'"
+        "invalid, deleting."
+      )
+      _msg_info \
+        "${_msg[*]}"
+      rm \
+        -rf \
+        "${_key_file}"
+    elif [[ "${_passed}" == "true" ]]; then
+      _key_files+=(
+        "${_key_file}"
+      )
+    fi
   done
 }
 
@@ -341,17 +342,19 @@ _key_address_check() {
         "email" \
       "${_key}")"
   _domain="${_email#*@}"
+  _passed="false"
   if [[ "${_address}" != "${_domain}" ]]; then
     _msg=(
-      "the target address '${_address}'"
+      "The target address '${_address}'"
       "does not correspond to domain '${_domain}'"
       "of identifier '${_email}'"
-      "for key '${_key}'"
+      "for key '${_key}', deleting."
     )
     _msg_error \
       "${_msg[*]}" \
-      1
+      0
   elif [[ "${_address}" == "${_domain}" ]]; then
+    _passed="true"
     _user_id="$( \
       gpg-key-info \
         -o \
@@ -363,9 +366,9 @@ _key_address_check() {
           "fingerprint" \
         "${_key}")"
     _msg=(
-      "key '${_key}' identifying"
+      "Key '${_key}' identifying"
       "valid user id '${_user_id}'"
-      "with fingerprint '${_fingerprint}'"
+      "with fingerprint '${_fingerprint}'."
     )
     _msg_info \
       "${_msg[*]}"
@@ -398,10 +401,10 @@ _keys_import() {
     _key \
     _msg=()
   _msg=(
-    "importing keys"
+    "Importing keys"
     "'${_key_files[*]}' into"
     "GNUPG keystore at directory"
-    "${_gnupg_home}"
+    "${_gnupg_home}."
   )
   _msg_info \
     "${_msg[*]}"
@@ -461,16 +464,16 @@ _evm_openpgp_key_receive() {
   fi
   if [[ "${_target_publisher}" != "${_target_address}" ]]; then
     _msg=(
-      "you are not getting '${_target_address}'"
-      "self-published key but from"
-      "publisher '${_target_publisher}'"
+      "Not getting '${_target_address}'"
+      "self-published keys but from"
+      "publisher '${_target_publisher}'."
     )
     _msg_warning \
       "${_msg[*]}"
   elif [[ "${_target_publisher}" == "${_target_address}" ]]; then
   _msg=(
-    "getting '${_target_address}' self-published"
-    "key(s) (safest option)"
+    "Getting '${_target_address}' self-published"
+    "key(s) (safest option)."
   )
   _msg_info \
     "${_msg[*]}"
@@ -482,7 +485,7 @@ _evm_openpgp_key_receive() {
   if [[ "${_target_key}" == "" ]] && \
      [[ "${_key_fingerprint}" == "" ]]; then
     _msg=(
-      "no target key or fingerprint"
+      "No target key or fingerprint"
       "specified, downloading all"
       "available keys."
     )
@@ -520,10 +523,7 @@ _input_type_auto_detect() {
     _input_type \
     _re
   _re='^[0-9]+$'
-  _target_key="$( \
-    _get \
-      "target" \
-      "key")"
+  _target_key="${target_key}"
   _input_type="number"
   if [[ "${_target_key}" != "" ]]; then
     if ! [[ ${_target_key} =~ ${_re} ]] ; then
@@ -540,10 +540,7 @@ _key_import_auto_detect() {
   local \
     _gnupg_home \
     _import
-  _gnupg_home="$( \
-    _get \
-      "gnupg" \
-      "home")"
+  _gnupg_home="${gnupg_home}"
   _import="y"
   if [[ "${_gnupg_home}" == "${HOME}/.gnupg" ]]; then
     _import="n"
@@ -561,18 +558,9 @@ _output_prefix_auto_detect() {
     _key_basename \
     _output_prefix \
     _target_address
-  _key_import="$( \
-    _get \
-      "key" \
-      "import")"
-  _target_address="$( \
-    _get \
-      "target" \
-      "address")"
-  _target_key="$( \
-    _get \
-      "target" \
-      "key")"
+  _key_import="${key_import}"
+  _target_address="${target_address}"
+  _target_key="${target_key}"
   _output_prefix=""
   if [[ "${_key_import}" == "n" ]]; then
     _base_prefix="$( \
@@ -629,48 +617,19 @@ _set_overrides() {
     "${user_level}"
   _api_key_auto_detect \
     "${target_network}"
-  _set_override \
-    "wallet" \
-    "name" \
-    "default"
-  _set_override \
-    "wallet" \
-    "path" \
-    "$(_wallet_path_get \
-         "evm-wallet" \
-         "${wallet_name}")"
-  _secret_auto_detect \
-    "seed" \
-    "seed" \
+  _wallet_overrides_set \
     "evm-wallet" \
-    "${wallet_name}"
-  _secret_auto_detect \
-    "password" \
-    "plain" \
-    "evm-wallet" \
-    "${wallet_name}"
-  _set_override \
-    "wallet" \
-    "address" \
-    "$(evm-wallet \
-         get \
-           "${wallet_name}" \
-           "address")"
+    "default" \
+    "n"
   _set_override \
     "cache" \
     "dir" \
     "$(_cache_dir_auto_detect)"
-  _contract_version_auto_detect \
-    "${deployments_dir}" \
-    "KeyServer" \
-    "ks" \
-    "${target_network}"
-  _contract_address_auto_detect \
+  _contract_setup_auto_detect \
     "evm-openpgp-keyserver" \
     "KeyServer" \
     "ks" \
     "${target_network}" \
-    "${ks_version}" \
     "${user_level}" \
     "${deployments_dir}"
   _set_override \
@@ -721,33 +680,8 @@ $(_display_networks \
      "${_networks[@]}")
 
   options:
-     -A <ks_address>        Address of the EVM OpenPGP Key Server
-                            on the network.
-                            Default: ${ks_address}
-     -V <ks_version>        Version of the target EVM OpenPGP Key
-                            Server.
-                            Default: ${ks_version}
-     -u                     Whether to retrieve key server
-                            address from user directory or from
-                            a custom deployment.
-                            Default: ${user_level}
-     -d <deployments_dir>   Contracts deployments directory.
-                            Default: ${deployments_dir}
-     -N <wallet_name>       Wallet name.
-                            Default: ${wallet_name}
-     -w <wallet_path>       Wallet path.
-                            Default: ${wallet_path}
-     -p <wallet_password>   Wallet password.
-                            Default: ${wallet_password}
-     -s <wallet_seed>       Wallet seed path.
-                            Default: ${wallet_seed}
-     -n <network>           EVM network name (${_networks[*]}).
-                            Default: ${target_network}
-     -k <api_key>           Etherscan-like service key.
-                            Default: ${api_key}
      -P <publisher>         Key publisher.
                             Default: ${target_publisher}
-
      -H <gnupg_home>        GnuPG configuration directory.
                             Default: ${gnupg_home}
      -t <input_type>        Input type for the optional 'key' argument.
@@ -763,6 +697,38 @@ $(_display_networks \
                             Default: ${key_import}
      -o                     Output key prefix.
                             Default: ${output_prefix}
+
+  contract options:
+     -A <ks_address>        Address of the EVM OpenPGP Key Server
+                            on the network.
+                            Default: ${ks_address}
+     -V <ks_version>        Version of the target EVM OpenPGP Key
+                            Server.
+                            Default: ${ks_version}
+
+  libevm options
+     -u                     Whether to retrieve key server
+                            address from user directory or from
+                            a custom deployment.
+                            Default: ${user_level}
+     -d <deployments_dir>   Contracts deployments directory.
+                            Default: ${deployments_dir}
+     -n <network>           EVM network name (${_networks[*]}).
+                            Default: ${target_network}
+
+  credentials options:
+     -N <wallet_name>       Wallet name.
+                            Default: ${wallet_name}
+     -w <wallet_path>       Wallet path.
+                            Default: ${wallet_path}
+     -p <wallet_password>   Wallet password.
+                            Default: ${wallet_password}
+     -s <wallet_seed>       Wallet seed path.
+                            Default: ${wallet_seed}
+     -k <api_key>           Etherscan-like service key.
+                            Default: ${api_key}
+
+  application options:
      -C <cache_dir>         Work directory
                             Default: ${cache_dir}
 
@@ -818,45 +784,61 @@ _show_config() {
 
 _globals
 _global_variables
+_libevm_global_variables
+_libevm_app_global_variables
 _requirements
 _config_user_init \
-  "$(_get \
-       "app" \
-       "name")"
+  "${app_name}"
+getopts_opts="$( \
+  printf \
+    "%s" \
+    "H:t:f:C:P:" \
+    "A:V:" \
+    "$(_libevm_app_getopts_params_get)" \
+    "i:n:" \
+    "$(_wallet_getopts_params_get)" \
+    "C:cvh")"
 # shellcheck disable=SC2034
 while \
   getopts \
-    'A:V:ud:N:w:p:s:n:k:H:t:f:C:P:cvh?' \
+    "${getopts_opts}" \
     arg; do
+  _wallet_getopts_case
+  _libevm_app_getopts_case
   case \
     "${arg}" in
-    A) override_ks_address="${OPTARG}" ;;
-    V) override_ks_version="${OPTARG}" ;;
-    u) override_user_level="y" ;;
-    d) override_deployments_dir="${OPTARG}" ;;
-    N) override_wallet_name="${OPTARG}" ;;
-    w) override_wallet_path="${OPTARG}" ;;
-    p) override_wallet_password="${OPTARG}" ;;
-    s) override_wallet_seed="${OPTARG}" ;;
-    n) override_target_network="${OPTARG}" ;;
-    k) override_api_key="${OPTARG}" ;;
-    H) override_gnupg_home="${OPTARG}" ;;
-    t) override_input_type="${OPTARG}" ;;
-    f) override_key_import="${OPTARG}" ;;
-    C) override_cache_dir="${OPTARG}" ;;
-    P) override_target_publisher="${OPTARG}" ;;
-    c) override_color="y" ;;
-    v) override_quiet="n" ;;
-    h|?) _set_overrides && \
-         _usage \
-           0 ;;
-    *)
-    _msg_error \
-      "Invalid argument '${arg}'" \
-      0
-    _usage \
-      1
-    ;;
+    A) \
+      override_ks_address="${OPTARG}" ;;
+    V) \
+      override_ks_version="${OPTARG}" ;;
+    n) \
+      override_target_network="${OPTARG}" ;;
+    H) \
+      override_gnupg_home="${OPTARG}" ;;
+    t) \
+      override_input_type="${OPTARG}" ;;
+    f) \
+      override_key_import="${OPTARG}" ;;
+    C) \
+      override_cache_dir="${OPTARG}" ;;
+    P) \
+      override_target_publisher="${OPTARG}" ;;
+    c) \
+      override_color="y" ;;
+    v) \
+      override_quiet="n" ;;
+    h) \
+      _set_overrides && \
+      _usage \
+        0 ;;
+    *) \
+      if [[ " ${getopts_opts} " != *"${arg}"* ]]; then
+        _msg_error \
+          "Invalid argument '${arg}'." \
+          0
+        _usage \
+          1
+      fi ;;
   esac
 done
 shift \
@@ -865,7 +847,7 @@ shift \
   ))
 if (( $# < 1 )); then
   _msg_error \
-    "no target address given" \
+    "No target address given." \
     0
   _set_overrides
   _usage \
@@ -879,7 +861,7 @@ if (( 0 < $# )); then
 fi
 if (( $# < 2 )); then
   _msg=(
-    "no target key given,"
+    "No target key given,"
     "getting all of them."
   )
   _msg_warning \

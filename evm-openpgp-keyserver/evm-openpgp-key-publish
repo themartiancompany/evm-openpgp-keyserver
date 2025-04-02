@@ -44,15 +44,8 @@ _global_variables() {
   publish_date=""
   ks_address=""
   ks_version=""
-  deployments_dir=""
-  user_level=""
-  wallet_name=""
-  wallet_path=""
-  wallet_password=""
-  wallet_seed=""
-  wallet_address=""
-  target_network=""
-  api_key=""
+  _libevm_global_variables
+  _libevm_app_global_variables
   cache_dir=""
   gnupg_home=""
   input_type=""
@@ -306,10 +299,10 @@ _evm_openpgp_key_publish() {
       "'upload key' option enabled with"
       "input type '${_input_type}'. If the input"
       "key address does not belong to your"
-      "EVMfs namespace this will re-upload"
+      "EVMFS namespace this will re-upload"
       "it in there. If you are trying to confirm"
       "another user key run ${app_name}"
-      "with the -S option"
+      "with the -S option."
     )
     _msg_warning \
       "${_msg[*]}"
@@ -356,7 +349,7 @@ _key_retrieve_keystore() {
     _gpg_opts=() \
     _msg=()
   _msg=(
-    "exporting in '${_output_file}' the key"
+    "Exporting in '${_output_file}' the key"
     "with fingerprint '${_fingerprint}'"
     "from the keystore in '${_gnupg_home}'."
   )
@@ -386,35 +379,17 @@ _key_retrieve_evmfs() {
     _wallet \
     _evmfs_opts=()
   _msg=(
-    "downloading in '${_output_file}' the key"
+    "Downloading in '${_output_file}' the key"
     "at URI '${_uri}'."
   )
   _msg_info \
     "${_msg[*]}"
-  _network="$( \
-    _get \
-      "target" \
-      "network")"
-  _name="$( \
-    _get \
-      "wallet" \
-      "name")"
-  _wallet="$( \
-    _get \
-      "wallet" \
-      "path")"
-  _password="$( \
-    _get \
-      "wallet" \
-      "password")"
-  _seed="$( \
-    _get \
-      "wallet" \
-      "seed")"
-  _api="$( \
-    _get \
-      "api" \
-      "key")"
+  _network="${target_network}"
+  _name="${wallet_name}"
+  _wallet="${wallet_path}"
+  _password="${wallet_password}"
+  _seed="${wallet_seed}"
+  _api="${api_key}"
   _evmfs_opts+=(
     -n
       "${_network}"
@@ -442,18 +417,12 @@ _target_key_check() {
     _input_type \
     _target_key \
     _msg=()
-  _input_type="$( \
-    _get \
-      "input" \
-      "type")"
-  _target_key="$( \
-    _get \
-      "target" \
-      "key")"
+  _input_type="${input_type}"
+  _target_key="${target_key}"
   if [[ "${_input_type}" == "file" ]]; then
     if [[ ! -e "${_target_key}" ]]; then
       _msg=(
-        "key file '${_target_key}'"
+        "Key file '${_target_key}'"
         "does not exist."
       )
       _msg_error \
@@ -482,30 +451,18 @@ _key_data_auto_detect() {
     _gpg_key_info_opts=() \
     _msg=()
   _uri=""
-  _cache_dir="$( \
-    _get \
-      "cache" \
-      "dir")"
-  _key="$( \
-    _get \
-      "target" \
-      "key")"
-  _gnupg_home="$( \
-    _get \
-      "gnupg" \
-      "home")"
-  _input_type="$( \
-    _get \
-      "input" \
-      "type")"
+  _cache_dir="${cache_dir}"
+  _key="${target_key}"
+  _gnupg_home="${gnupg_home}"
+  _input_type="${input_type}"
   _gpg_key_info_opts+=(
     -H
       "${_gnupg_home}"
   )
   if [[ "${_input_type}" == "fingerprint" ]]; then
     _msg=(
-      "exporting the key from the keystore"
-      "in '${_gnupg_home}'"
+      "Exporting the key from the keystore"
+      "in '${_gnupg_home}'."
     )
     _msg_info \
       "${_msg[*]}"
@@ -535,7 +492,7 @@ _key_data_auto_detect() {
       "${_key}")"
   if [[ "${_fingerprint}" == "" ]]; then
     _msg_error \
-      "no fingerprint found" \
+      "No fingerprint found." \
       1
   fi
   _name="$( \
@@ -546,8 +503,8 @@ _key_data_auto_detect() {
       "${_key}")"
   if [[ "${_name}" == "" ]]; then
     _msg=(
-      "the key '${_key}' has no names"
-      "associated to it"
+      "The key '${_key}' has no names"
+      "associated to it."
     )
     _msg_warning \
       "${_msg[*]}"
@@ -560,8 +517,8 @@ _key_data_auto_detect() {
       "${_key}")"
   if [[ "${_email}" == "" ]]; then
     _msg=(
-      "the key '${_key}' has no emails"
-      "associated to it"
+      "The key '${_key}' has no emails"
+      "associated to it."
     )
     _msg_error \
       "${_msg[*]}" \
@@ -605,7 +562,7 @@ _key_upload_auto_detect() {
     _upload="n"
   else
     _msg=(
-      "unknown input type '${_input_type}'"
+      "Unknown input type '${_input_type}'."
     )
     _msg_error \
       "${_msg[*]}" \
@@ -621,10 +578,7 @@ _input_type_auto_detect() {
   local \
     _target_key \
     _input_type
-  _target_key="$( \
-    _get \
-      "target" \
-      "key")"
+  _target_key="${target_key}"
   _input_type="fingerprint"
   if [[ "${_target_key}" != "" ]]; then
     if [[ -e "${_target_key}" ]]; then
@@ -642,10 +596,7 @@ _input_type_auto_detect() {
 _set_overrides() {
   local \
     _target_key
-  _target_key="$( \
-    _get \
-      "target" \
-      "key")"
+  _target_key="${target_key}"
   if [[ -v override_quiet ]]; then
     quiet="${override_quiet}"
   elif [[ -z "${quiet}" ]]; then
@@ -673,33 +624,10 @@ _set_overrides() {
     "${user_level}"
   _api_key_auto_detect \
     "${target_network}"
-  _set_override \
-    "wallet" \
-    "name" \
-    "default"
-  _set_override \
-    "wallet" \
-    "path" \
-    "$(_wallet_path_get \
-         "evm-wallet" \
-         "${wallet_name}")"
-  _secret_auto_detect \
-    "seed" \
-    "seed" \
+  _wallet_overrides_set \
     "evm-wallet" \
-    "${wallet_name}"
-  _secret_auto_detect \
-    "password" \
-    "plain" \
-    "evm-wallet" \
-    "${wallet_name}"
-  _set_override \
-    "wallet" \
-    "address" \
-    "$(evm-wallet \
-         get \
-           "${wallet_name}" \
-           "address")"
+    "default" \
+    "y"
   _set_override \
     "cache" \
     "dir" \
@@ -743,10 +671,11 @@ _usage() {
     _get \
       "deployments" \
       "dir")/${_contract}"
-  _networks="$( \
+  _networks=( $( \
     evm-contract-deployment-networks \
       -A \
-      "${_ks_deployment}")"
+      "${_ks_deployment}")
+  )
   IFS='' \
     read \
       -r \
@@ -756,7 +685,7 @@ _usage() {
 Ethereum Virtual Machine-compatible network OpenPGP Key Server keys publisher
 
 Usage:
-  $(_get "app" "name")
+  ${app_name}
     [options]
     <key> (or -H <gnupg_home>
               -f
@@ -764,7 +693,7 @@ Usage:
 
   networks:
 $(_display_networks \
-     "${_networks[*]}")
+     "${_networks[@]}")
 
   options:
      -A <ks_address>        Address of the EVM OpenPGP Key Server
@@ -826,27 +755,6 @@ _display_flags() {
   done
 }
 
-_display_networks() {
-  local \
-    _network \
-    _network_name \
-    _networks=(
-      "${1}"
-    )
-  for _network \
-    in "${_networks[@]}"; do
-    _network_name="$( \
-      evm-chains-info \
-        -i \
-          "id" \
-        -o \
-          "name" \
-        "${_network}")"
-  echo \
-    "    ${_network_name}"
-  done
-}
-
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
@@ -876,9 +784,7 @@ _globals
 _global_variables
 _requirements
 _config_user_init \
-  "$(_get \
-       "app" \
-       "name")"
+  "${app_name}"
 # shellcheck disable=SC2034
 while \
   getopts \
@@ -920,31 +826,25 @@ shift \
   ))
 if (( $# < 1 )); then
   _msg_error \
-    "no target address given" \
+    "No target address given." \
     0
   _set_overrides
   _usage \
     1
 fi
 if (( 0 < $# )); then
-  _set \
-    "target" \
-    "address" \
-    "${1}"
+  target_address="${1}"
 fi
 if (( $# < 2 )); then
   _msg_error \
-    "no target key given" \
+    "No target key given." \
     0
   _set_overrides
   _usage \
     1
 fi
 if (( 1 < $# )); then
-  _set \
-    "target" \
-    "key" \
-    "${2}"
+  target_key="${2}"
 fi
 shift \
   2 || \
