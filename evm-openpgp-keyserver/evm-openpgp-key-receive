@@ -77,6 +77,8 @@ _requirements() {
     'evm-contract-deployments-dir' \
     'evm-contracts-tools'
   _check_cmd \
+    'evm-gpg-key-address-check'
+  _check_cmd \
     'evm-wallet'
   _check_cmd \
     'evmfs'
@@ -227,6 +229,7 @@ _keys_receive() {
     _evm_contract_call_opts=() \
     _evmfs_opts=() \
     _keys=() \
+    _key_email \
     _keys_amount \
     _keys_amount_call_opts=() \
     _work_dir \
@@ -306,10 +309,12 @@ _keys_receive() {
     _key_download \
       "${_uris[${_uri}]}" \
       "${_key_file}"
-    _key_address_check \
-      "${_key_file}" \
-      "${_address}"
-    if [[ "${_passed}" == "false" ]]; then
+    _key_email="$( \
+      evm-gpg-key-address-check \
+        "${_key_file}" \
+        "${_address}" || \
+        true)"
+    if [[ "${_key_email}" == "" ]]; then
       _msg=(
         "Key '${_key_file}'"
         "invalid, deleting."
@@ -319,60 +324,19 @@ _keys_receive() {
       rm \
         -rf \
         "${_key_file}"
-    elif [[ "${_passed}" == "true" ]]; then
+    elif [[ "${_key_email}" != "" ]]; then
+      _msg=(
+        "Key '${_key_file}' has"
+        "valid address, adding for"
+        "processing."
+      )
+      _msg_info \
+        "${_msg[*]}"
       _key_files+=(
         "${_key_file}"
       )
     fi
   done
-}
-
-_key_address_check() {
-  local \
-    _key="${1}" \
-    _address="${2}" \
-    _domain \
-    _email \
-    _fingerprint \
-    _user_id \
-    _msg=()
-  _email="$( \
-    gpg-key-info \
-      -o \
-        "email" \
-      "${_key}")"
-  _domain="${_email#*@}"
-  _passed="false"
-  if [[ "${_address}" != "${_domain}" ]]; then
-    _msg=(
-      "The target address '${_address}'"
-      "does not correspond to domain '${_domain}'"
-      "of identifier '${_email}'"
-      "for key '${_key}', deleting."
-    )
-    _msg_error \
-      "${_msg[*]}" \
-      0
-  elif [[ "${_address}" == "${_domain}" ]]; then
-    _passed="true"
-    _user_id="$( \
-      gpg-key-info \
-        -o \
-          "email" \
-        "${_key}")"
-    _fingerprint="$( \
-      gpg-key-info \
-        -o \
-          "fingerprint" \
-        "${_key}")"
-    _msg=(
-      "Key '${_key}' identifying"
-      "valid user id '${_user_id}'"
-      "with fingerprint '${_fingerprint}'."
-    )
-    _msg_info \
-      "${_msg[*]}"
-  fi
 }
 
 _keys_move() {
@@ -387,8 +351,8 @@ _keys_move() {
     "${_key_files[@]}" \
     "${_output_prefix_dirname}"
   _msg=(
-    "keys correctly moved to"
-    "'${_output_prefix_dirname}' directory"
+    "Keys correctly moved to"
+    "'${_output_prefix_dirname}' directory."
   )
   _msg_info \
     "${_msg[*]}"
