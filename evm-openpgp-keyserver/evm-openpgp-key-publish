@@ -44,8 +44,6 @@ _global_variables() {
   publish_date=""
   ks_address=""
   ks_version=""
-  _libevm_global_variables
-  _libevm_app_global_variables
   cache_dir=""
   gnupg_home=""
   input_type=""
@@ -296,12 +294,12 @@ _evm_openpgp_key_publish() {
   if [[ "${_input_type}" == "evmfs" ]] && \
      [[ "${_key_upload}" == "y" ]]; then
     _msg=(
-      "'upload key' option enabled with"
+      "Option 'upload key' enabled with"
       "input type '${_input_type}'. If the input"
       "key address does not belong to your"
       "EVMFS namespace this will re-upload"
       "it in there. If you are trying to confirm"
-      "another user key run ${app_name}"
+      "another user's key, run ${app_name}"
       "with the -S option."
     )
     _msg_warning \
@@ -310,13 +308,13 @@ _evm_openpgp_key_publish() {
           "${_input_type}" == "fingerprint" ]] && \
        [[ "${_key_upload}" == "n" ]]; then
     _msg=(
-      "'upload key' option disabled with"
+      "Option 'upload key' disabled with"
       "input type '${_input_type}'. If the input"
       "key has not been already uploaded to your"
       "EVMfs namespace this will produce a dead link."
       "Please double check you have already uploaded"
       "the key on your namespace or run"
-      "${app_name} without the -S option"
+      "${app_name} without the -S option."
     )
     _msg_warning \
       "${_msg[*]}"
@@ -632,17 +630,11 @@ _set_overrides() {
     "cache" \
     "dir" \
     "$(_cache_dir_auto_detect)"
-  _contract_version_auto_detect \
-    "${deployments_dir}" \
-    "KeyServer" \
-    "ks" \
-    "${target_network}"
-  _contract_address_auto_detect \
+  _contract_setup_auto_detect \
     "evm-openpgp-keyserver" \
     "KeyServer" \
     "ks" \
     "${target_network}" \
-    "${ks_version}" \
     "${user_level}" \
     "${deployments_dir}"
   _set_override \
@@ -667,10 +659,7 @@ _usage() {
     _networks \
     _usage_text
   _contract="KeyServer"
-  _ks_deployment="$( \
-    _get \
-      "deployments" \
-      "dir")/${_contract}"
+  _ks_deployment="${deployments_dir}/${_contract}"
   _networks=( $( \
     evm-contract-deployment-networks \
       -A \
@@ -682,6 +671,7 @@ _usage() {
       -d '' \
       _usage_text << \
         ENDUSAGETEXT || true
+
 Ethereum Virtual Machine-compatible network OpenPGP Key Server keys publisher
 
 Usage:
@@ -696,30 +686,6 @@ $(_display_networks \
      "${_networks[@]}")
 
   options:
-     -A <ks_address>        Address of the EVM OpenPGP Key Server
-                            on the network.
-                            Default: ${ks_address}
-     -V <ks_version>        Version of the target EVM OpenPGP Key
-                            Server.
-                            Default: ${ks_version}
-     -u                     Whether to retrieve key server
-                            address from user directory or from
-                            a custom deployment.
-                            Default: ${user_level}
-     -d <deployments_dir>   Contracts deployments directory.
-                            Default: ${deployments_dir}
-     -N <wallet_name>       Wallet name.
-                            Default: ${wallet_name}
-     -w <wallet_path>       Wallet path.
-                            Default: ${wallet_path}
-     -p <wallet_password>   Wallet password.
-                            Default: ${wallet_password}
-     -s <wallet_seed>       Wallet seed path.
-                            Default: ${wallet_seed}
-     -n <network>           EVM network name (${_networks[*]}).
-                            Default: ${target_network}
-     -k <api_key>           Etherscan-like service key.
-                            Default: ${api_key}
      -H <gnupg_home>        GnuPG configuration directory.
                             Default: ${gnupg_home}
      -t <input_type>        It can be 'file', 'fingerprint' or
@@ -728,6 +694,38 @@ $(_display_networks \
      -S                     If enabled it won't upload the
                             key file to the EVMfs.
                             Default: ${input_type}
+
+  contract options:
+     -A <ks_address>        Address of the EVM OpenPGP Key Server
+                            on the network.
+                            Default: ${ks_address}
+     -V <ks_version>        Version of the target EVM OpenPGP Key
+                            Server.
+                            Default: ${ks_version}
+
+  libevm options:
+     -u                     Whether to retrieve key server
+                            address from user directory or from
+                            a custom deployment.
+                            Default: ${user_level}
+     -d <deployments_dir>   Contracts deployments directory.
+                            Default: ${deployments_dir}
+     -n <network>           EVM network name (${_networks[*]}).
+                            Default: ${target_network}
+
+  credentials options:
+     -N <wallet_name>       Wallet name.
+                            Default: ${wallet_name}
+     -w <wallet_path>       Wallet path.
+                            Default: ${wallet_path}
+     -p <wallet_password>   Wallet password.
+                            Default: ${wallet_password}
+     -s <wallet_seed>       Wallet seed path.
+                            Default: ${wallet_seed}
+     -k <api_key>           Etherscan-like service key.
+                            Default: ${api_key}
+
+  applications options
      -C <cache_dir>         Work directory
                             Default: ${cache_dir}
 
@@ -782,6 +780,8 @@ _show_config() {
 
 _globals
 _global_variables
+_libevm_global_variables
+_libevm_app_global_variables
 _requirements
 _config_user_init \
   "${app_name}"
