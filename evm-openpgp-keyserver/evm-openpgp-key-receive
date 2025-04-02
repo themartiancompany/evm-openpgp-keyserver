@@ -759,7 +759,7 @@ getopts_opts="$( \
     "H:t:f:C:P:" \
     "A:V:" \
     "$(_libevm_app_getopts_params_get)" \
-    "i:n:" \
+    "n:" \
     "$(_wallet_getopts_params_get)" \
     "C:cvh")"
 # shellcheck disable=SC2034
