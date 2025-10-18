@@ -36,6 +36,7 @@ _KS_DEPLOYMENTS_DIR=$(_KS_DIR)/deployments
 DOC_DIR=$(DESTDIR)$(PREFIX)/share/doc/$(_PROJECT)
 BIN_DIR=$(DESTDIR)$(PREFIX)/bin
 LIB_DIR=$(DESTDIR)$(PREFIX)/lib/$(_PROJECT)
+MAN_DIR?=$(DESTDIR)$(PREFIX)/share/man
 BUILD_DIR=build
 CONTRACTS_BUILD_WORK_DIR=contracts-build
 
@@ -73,13 +74,15 @@ _INSTALL_CONTRACTS_TARGETS_ALL:=\
   install-contracts-deployments-config \
   install-contracts-sources
 _INSTALL_TARGETS:=\
-  install-doc \
   $(_INSTALL_CONTRACTS_TARGETS) \
+  install-doc \
+  install-man \
   install-scripts
 _INSTALL_TARGETS_ALL:=\
   install \
-  install-doc \
   $(_INSTALL_CONTRACTS_TARGETS_ALL) \
+  install-doc \
+  install-man \
   install-scripts
 _PHONY_TARGETS:=\
   $(_BUILD_TARGETS_ALL) \
@@ -212,6 +215,17 @@ install-doc:
 	$(_INSTALL_FILE) \
 	  $(DOC_FILES) \
 	  -t $(DOC_DIR);
+
+install-man:
+
+	$(_INSTALL_DIR) \
+	  "$(MAN_DIR)/man1"
+	rst2man \
+	  "man/evm-openpgp-key-publish.1.rst" \
+	  "$(MAN_DIR)/man1/evm-openpgp-key-publish.1"
+	rst2man \
+	  "man/evm-openpgp-key-receive.1.rst" \
+	  "$(MAN_DIR)/man1/evm-openpgp-key-receive.1"
 
 install-scripts:
 
