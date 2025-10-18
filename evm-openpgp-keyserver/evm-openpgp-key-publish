@@ -677,6 +677,7 @@ Ethereum Virtual Machine-compatible network OpenPGP Key Server keys publisher
 Usage:
   ${app_name}
     [options]
+    <address>
     <key> (or -H <gnupg_home>
               -f
               <fingerprint>)
@@ -710,7 +711,7 @@ $(_display_networks \
                             Default: ${user_level}
      -d <deployments_dir>   Contracts deployments directory.
                             Default: ${deployments_dir}
-     -n <network>           EVM network name (${_networks[*]}).
+     -n <network>           EVM network name.
                             Default: ${target_network}
 
   credentials options:
