@@ -601,11 +601,11 @@ _set_overrides() {
     "home" \
     "${HOME}/.gnupg"
   _key_import_auto_detect
+  _input_type_auto_detect
   _set_override \
     "target" \
     "publisher" \
     "${_target_address}"
-  _input_type_auto_detect
   _output_prefix_auto_detect
 }
 

@@ -9,12 +9,26 @@ pragma solidity >=0.7.0 <0.9.0;
 contract KeyServer {
 
     address public immutable deployer = 0xea02F564664A477286B93712829180be4764fAe2;
-    string public hijess = "isallforu";
+    string public tante = "nocidicocco";
 
-    mapping(address => mapping(address => mapping(uint256 => string))) public key; 
-    mapping(address => mapping(address => uint256)) public keyNo; 
-    mapping(address => mapping(address => mapping(string => uint256))) public fingerprint;
-    mapping(address => mapping(address => mapping(uint256 => bool))) public revoked;
+    mapping(
+      address => mapping(
+        address => mapping(
+          uint256 => string ) ) ) public key; 
+    mapping(
+      address => mapping(
+        address => uint256 ) ) public keyNo; 
+    mapping(
+      string => mapping(
+        address => address) ) public owner;
+    mapping(
+      address => mapping(
+        address => mapping(
+          string => uint256 ) ) ) public fingerprint;
+    mapping(
+      address => mapping(
+        address => mapping(
+          uint256 => bool ) ) ) public revoked;
     constructor() {}
 
     /**
@@ -26,7 +40,8 @@ contract KeyServer {
       public
       view {
       require(
-        msg.sender == _user);
+        msg.sender == _user
+      );
     }
 
     /**
@@ -40,12 +55,34 @@ contract KeyServer {
       address _user,
       address _publisher,
       string memory _fingerprint,
-      string memory _key) public {
+      string memory _key)
+      public {
       checkOwner(
         _publisher);
-      key[_user][_publisher][keyNo[_user][_publisher]] = _key;
-      fingerprint[_user][_publisher][_fingerprint] = keyNo[_user][_publisher];
-      keyNo[_user][_publisher] = keyNo[_user][_publisher] + 1;
+      key[
+        _user][
+          _publisher][
+            keyNo[
+              _user][
+                _publisher]] =
+        _key;
+      fingerprint[
+        _user][
+          _publisher][
+            _fingerprint] =
+        keyNo[
+          _user][
+            _publisher];
+      owner[
+        _fingerprint][
+          _publisher] =
+        _user;
+      keyNo[
+        _user][
+          _publisher] =
+        keyNo[
+          _user][
+            _publisher] + 1;
     }
 
     /**
