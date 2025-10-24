@@ -810,18 +810,18 @@ shift \
     OPTIND - 1 \
   ))
 if (( $# < 1 )); then
+  _msg=(
+    "No target address given."
+  )
   _msg_error \
-    "No target address given." \
+    "${_msg[*]}" \
     0
   _set_overrides
   _usage \
     1
 fi
 if (( 0 < $# )); then
-  _set \
-    "target" \
-    "address" \
-    "${1}"
+  target_address="${1}"
 fi
 if (( $# < 2 )); then
   _msg=(
@@ -832,10 +832,7 @@ if (( $# < 2 )); then
     "${_msg[*]}"
 fi
 if (( 1 < $# )); then
-  _set \
-    "target" \
-    "key" \
-    "${2}"
+  target_key="${2}"
 fi
 shift \
   2 || \

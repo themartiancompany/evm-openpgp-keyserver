@@ -77,6 +77,9 @@ _requirements() {
     'evm-contract-deployments-dir' \
     'evm-contracts-tools'
   _check_cmd \
+    'evm-gpg' \
+    'evm-gnupg'
+  _check_cmd \
     'evm-wallet'
   _check_cmd \
     'evmfs'
@@ -549,10 +552,7 @@ _key_upload_auto_detect() {
     _input_type \
     _upload \
     _msg=()
-  _input_type="$( \
-    _get \
-      "input" \
-      "type")"
+  _input_type="${input_type}"
   if [[ "${_input_type}" == "file" ]] || \
      [[ "${_input_type}" == "fingerprint" ]]; then
     _upload="y"
@@ -570,6 +570,21 @@ _key_upload_auto_detect() {
     "key" \
     "upload" \
     "${_upload}"
+}
+
+_target_key_auto_detect() {
+  local \
+    _target_key \
+    _evm_gpg_opts=() \
+    _gpg_homedir
+  evm-gpg \
+    -N \
+      "${wallet_name}"
+    list \
+      "fingerprint"
+  _target_key=""
+  if [[]]; then
+  fi
 }
 
 _input_type_auto_detect() {
@@ -641,6 +656,7 @@ _set_overrides() {
     "gnupg" \
     "home" \
     "${HOME}/.gnupg"
+  _target_key_auto_detect
   _input_type_auto_detect
   _key_upload_auto_detect
   if [[ "${_target_key}" != "" ]]; then
@@ -678,7 +694,7 @@ Usage:
   ${app_name}
     [options]
     <address>
-    <key> (or -H <gnupg_home>
+    (<key> or -H <gnupg_home>
               -f
               <fingerprint>)
 
@@ -836,14 +852,13 @@ fi
 if (( 0 < $# )); then
   target_address="${1}"
 fi
-if (( $# < 2 )); then
-  _msg_error \
-    "No target key given." \
-    0
-  _set_overrides
-  _usage \
-    1
-fi
+# if (( $# < 2 )); then
+#   _msg_inf \
+#     "No target key given."
+#   # _set_overrides
+#   # _usage \
+#   #   1
+# fi
 if (( 1 < $# )); then
   target_key="${2}"
 fi
