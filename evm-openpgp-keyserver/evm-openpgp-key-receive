@@ -653,8 +653,10 @@ $(_display_networks \
                             It can be 'fingerprint' or
                             'number'.
                             Default: ${input_type}
-     -f <y/n>               Save the keys to file without
-                            importing them into the keystore.
+     -f <y/n>               Whether to import the keys 
+                            into the keystore.
+                            If 'n' it will save them
+                            to file.
                             Defaults to 'y' if the GNUPG
                             configuration directory
                             is not the default user one,

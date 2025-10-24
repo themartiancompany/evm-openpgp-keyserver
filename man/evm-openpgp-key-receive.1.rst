@@ -60,9 +60,10 @@ Options
 -H gnupg_home           GnuPG configuration directory.
 -t input_type           Input type for the optional 'key' argument.
                         It can be 'fingerprint' or 'number'.
--f <y/n>                Save the keys to file without
-                        importing them into the keystore.
-                        Defaults to 'y' if the GNUPG
+-f <y/n>                Whether to import the keys 
+                        into the keystore.
+                        If 'n' it will save them
+                        to file. Defaults to 'y' if the GNUPG
                         configuration directory
                         is not the default user one,
                         'n' otherwise.
