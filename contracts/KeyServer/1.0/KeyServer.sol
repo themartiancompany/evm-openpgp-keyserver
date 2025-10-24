@@ -178,9 +178,8 @@ contract KeyServer {
 
     /**
      * @dev Read the owner of a fingerprint.
-     * @param _user User associated to the key.
-     * @param _publisher User publishing the key.
-     * @param _fingerprint Fingerprint identifying the target key to retrieve.
+     * @param _publisher User publishing the owner of the fingerprint.
+     * @param _fingerprint Fingerprint of which to identify the owner.
      */
     function readOwnerFingerprint(
       address _publisher,
