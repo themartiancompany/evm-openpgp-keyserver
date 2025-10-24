@@ -1,5 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
+//    ----------------------------------------------------------------------
+//    Copyright © 2025  Pellegrino Prevete
+//
+//    All rights reserved
+//    ----------------------------------------------------------------------
+//
+//    This program is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU Affero General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    This program is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU Affero General Public License for more details.
+//
+//    You should have received a copy of the GNU Affero General Public License
+//    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 pragma solidity >=0.7.0 <0.9.0;
 
 /**
@@ -94,10 +114,15 @@ contract KeyServer {
     function revokeKey(
       address _user,
       address _publisher,
-      uint256 _key) public {
+      uint256 _key)
+      public {
       checkOwner(
         _publisher);
-      revoked[_user][_publisher][_key] = true;
+      revoked[
+        _user][
+          _publisher][
+            _key] =
+        true;
     }
 
     /**
@@ -112,19 +137,26 @@ contract KeyServer {
       uint256 _key)
     public
     view
-    returns (string memory)
+    returns (
+      string memory)
     {
       require(
-        revoked[_user][_publisher][_key] == false,
-        "the key has been revoked");
-      return key[_user][_publisher][_key];
+        revoked[
+          _user][
+            _publisher][
+              _key] == false,
+        "The key has been revoked.");
+      return key[
+               _user][
+                 _publisher][
+                   _key];
     }
 
     /**
      * @dev Read an user OpenPGP key given publisher and fingerprint.
      * @param _user User associated to the key.
      * @param _publisher User publishing the key.
-     * @param _fingerprint fingerprint identifying the target key to retrieve.
+     * @param _fingerprint Fingerprint identifying the target key to retrieve.
      */
     function readKeyFingerprint(
       address _user,
@@ -132,9 +164,35 @@ contract KeyServer {
       string memory _fingerprint)
     public
     view
-    returns (string memory)
+    returns (
+      string memory)
     {
-      return key[_user][_publisher][fingerprint[_user][_publisher][_fingerprint]];
+      return key[
+               _user][
+                 _publisher][
+                   fingerprint[
+                     _user][
+                       _publisher][
+                         _fingerprint]];
+    }
+
+    /**
+     * @dev Read the owner of a fingerprint.
+     * @param _user User associated to the key.
+     * @param _publisher User publishing the key.
+     * @param _fingerprint Fingerprint identifying the target key to retrieve.
+     */
+    function readOwnerFingerprint(
+      address _publisher,
+      string memory _fingerprint)
+    public
+    view
+    returns (
+      address)
+    {
+      return owner[
+               _fingerprint][
+                 _publisher];
     }
 
 }
