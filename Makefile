@@ -113,7 +113,7 @@ contracts:
 	evm-make \
 	  -v \
 	  -C \
-	    . \
+	    "$${PWD}" \
 	  -b \
 	    "$(SOLIDITY_COMPILER_BACKEND)" \
 	  -w \
@@ -124,7 +124,7 @@ install-contracts-sources:
 	evm-make \
 	  -v \
 	  -C \
-	    . \
+	    "$${PWD}" \
 	  -b \
 	    "$(SOLIDITY_COMPILER_BACKEND)" \
 	  -w \
