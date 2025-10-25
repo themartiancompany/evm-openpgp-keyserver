@@ -201,7 +201,7 @@ _uri_check() {
       "${_msg[*]}" \
       1
   fi
-  if [[ "${_uri}" != "evmfs://" ]]; then
+  if [[ "${_uri}" != "evmfs://"* ]]; then
     _msg=(
       "Key value is not an EVMFS URI."
     )
@@ -365,7 +365,7 @@ _evm_openpgp_key_publish() {
       "Option 'upload key' disabled with"
       "input type '${_input_type}'. If the input"
       "key has not been already uploaded to your"
-      "EVMfs namespace this will produce a dead link."
+      "EVMFS namespace this will produce a dead link."
       "Please double check you have already uploaded"
       "the key on your namespace or run"
       "${app_name} without the -S option."
