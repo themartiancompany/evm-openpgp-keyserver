@@ -225,8 +225,7 @@ _uri_auto_detect() {
       "and fingerprint '${_fingerprint}'."
     )
     _msg_info \
-      "${_msg[*]}" \
-      1
+      "${_msg[*]}"
   fi
 }
 

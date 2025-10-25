@@ -52,6 +52,7 @@ _global_variables() {
   output_prefix=""
   ks_address=""
   ks_version=""
+  keys_filters=()
   cache_dir=""
   gnupg_home=""
   command_args=()
@@ -548,6 +549,48 @@ _output_prefix_auto_detect() {
     "${_output_prefix}"
 }
 
+_filter_address_find() {
+  local \
+    _address_assert \
+    _addresses=() \
+    _msg=()
+  _address=""
+  for _filter in "${keys_filters[@]}"; do
+    _address_assert="$( \
+      _address_sanity_check \
+        "${_filter}" \
+        "0")"
+    if [[ "${_address_assert}" == "" ]]; then
+      _addresses+=(
+        "${_filter}"
+      )
+    fi
+  done
+  if (( 1 < "${#_addresses[@]}" )); then
+    _msg=(
+      "Ambiguous keys filters:"
+      "multiple target wallets (${_addresses[*]})"
+      "selected."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
+_fingerprint_find() {
+  local \
+    _fingerprint_assert
+  for _filter in "${keys_filters
+}
+
+_keys_filters_auto_detect() {
+  local \
+    _address
+  _filter_address_find
+  _fingerprint_find
+}
+
 _set_overrides() {
   local \
     _target_address \
@@ -600,6 +643,7 @@ _set_overrides() {
     "gnupg" \
     "home" \
     "${HOME}/.gnupg"
+  _keys_filters_auto_detect
   _key_import_auto_detect
   _input_type_auto_detect
   _set_override \
@@ -637,8 +681,15 @@ Ethereum Virtual Machine-compatible network OpenPGP Key Server keys receiver
 Usage:
   ${app_name}
     [options]
-    <address>
-    (<key>)
+    [key-filter]
+
+  key filters:
+    <address>              The address of which to retrieve the keys.
+      (<key-number>)       Optional, select which key to retrieve.
+    <fingerprint>          Fingerprint of the key to retrieve.
+                           If no address is provided the program
+                           will attempt to retrieve owner of the key
+                           in Ur Publishers namespaces.
 
   networks:
 $(_display_networks \
@@ -828,7 +879,11 @@ if (( $# < 1 )); then
   _usage \
     1
 fi
+keys_filters=()
 if (( 0 < "${#}" )); then
+  keys_filters+=(
+    "${1}"
+  )
   target_address="${1}"
 fi
 if (( $# < 2 )); then
@@ -841,6 +896,9 @@ if (( $# < 2 )); then
 fi
 if (( 1 < "${#}" )); then
   target_key="${2}"
+  keys_filters+=(
+    "${2}"
+  )
 fi
 shift \
   2 || \
