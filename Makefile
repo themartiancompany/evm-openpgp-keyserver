@@ -137,14 +137,19 @@ install-contracts-sources:
 
 install-contracts-deployments-config:
 
-	for _network in $(DEPLOYED_NETWORKS); do \
-	  _deployment_dir="$(_KS_DEPLOYMENTS_DIR)/$${_network}"; \
-	  _config_file="$${_deployment_dir}/config.sh"; \
-	  _install_dir="$(LIB_DIR)/deployments/$(_KS_NAME)/$${_network}"; \
-	  $(_INSTALL_FILE) \
-	    "$${_deployment_dir}/config.sh" \
-	    "$${_install_dir}/config.sh"; \
-	done
+	evm-make \
+	  -v \
+	  -C \
+	    . \
+	  -b \
+	    "$(SOLIDITY_COMPILER_BACKEND)" \
+	  -w \
+	    "$(BUILD_DIR)" \
+	  -o \
+	    "$(LIB_DIR)" \
+	  -l \
+	    "n" \
+	  install_deployments_config
 
 install-contracts-deployments-solc:
 
