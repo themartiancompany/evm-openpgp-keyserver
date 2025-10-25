@@ -111,16 +111,23 @@ _key_evmfs_upload() {
     publish \
       "${_key}" 
   _uri="$( \
-    evmfs \
-      "${_evmfs_call_opts[@]}" \
-      publish \
-        "${_key}")"
+    _key_evmfs_uri_get \
+      "${_key}")"
   _msg=(
     "Key '${_key}' correctly uploaded,"
     "target URI set to '${_uri}'."
   )
   _msg_info \
     "${_msg[*]}"
+}
+
+_key_evmfs_uri_get() {
+  local \
+    _key="${1}"
+  evmfs \
+    "${_evmfs_call_opts[@]}" \
+    publish \
+      "${_key}"
 }
 
 _opts_setup() {
@@ -183,6 +190,46 @@ _opts_setup() {
     "${_msg[*]}"
 }
 
+_uri_check() {
+  local \
+    _uri="${1}"
+  if [[ "${_uri}" == "" ]]; then
+    _msg=(
+      "Empty value for the key."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+  if [[ "${_uri}" != "evmfs://" ]]; then
+    _msg=(
+      "Key value is not an EVMFS URI."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
+_uri_auto_detect() {
+  if [[ "${_uri}" == "" ]]; then
+    if [[ "${_input_type}" == "file" || \
+          "${_fingerprint}" ]]; then
+      _uri="$( \
+        _key_evmfs_uri_get \
+          "${_key}")"
+    fi
+    _msg=(
+      "Got EVMFS URI '${_uri}'"
+      "from key '${_key}'"
+      "and fingerprint '${_fingerprint}'."
+    )
+    _msg_info \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
 _key_publish() {
   local \
     _target_network="${1}" \
@@ -212,7 +259,11 @@ _key_publish() {
   if [[ "${_upload}" == "y" ]]; then
     _key_evmfs_upload \
       "${_key}"
+  elif [[ "${_upload}" == "n" ]]; then
+    _uri_auto_detect
   fi
+  _uri_check \
+    "${_uri}"
   evm-contract-call \
     "${_publish_call_opts[@]}" \
     "${_ks_address}" \
@@ -430,11 +481,9 @@ _target_key_check() {
         "${_msg[*]}" \
         1
     elif [[ -e "${_target_key}" ]]; then
-      _set \
-        "target" \
-        "key" \
-        "$(realpath \
-             "${_target_key}")"
+      target_key="$( \
+        realpath \
+          "${_target_key}")"
     fi
   fi
 }
@@ -525,14 +574,8 @@ _key_data_auto_detect() {
       "${_msg[*]}" \
       1
   fi
-  _set \
-    "target" \
-    "key" \
-    "${_key}"
-  _set \
-    "target" \
-    "uri" \
-    "${_uri}"
+  target_key="${_key}"
+  target_uri="${_uri}"
   _set_override \
     "key" \
     "fingerprint" \
@@ -577,14 +620,16 @@ _target_key_auto_detect() {
     _target_key \
     _evm_gpg_opts=() \
     _gpg_homedir
+  _target_key=""
   evm-gpg \
     -N \
       "${wallet_name}"
     list \
       "fingerprint"
-  _target_key=""
-  if [[]]; then
-  fi
+  _set_override \
+    "target" \
+    "key" \
+    "${_target_key}"
 }
 
 _input_type_auto_detect() {
@@ -656,7 +701,7 @@ _set_overrides() {
     "gnupg" \
     "home" \
     "${HOME}/.gnupg"
-  _target_key_auto_detect
+  # _target_key_auto_detect
   _input_type_auto_detect
   _key_upload_auto_detect
   if [[ "${_target_key}" != "" ]]; then
