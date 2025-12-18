@@ -45,6 +45,13 @@ _global_variables() {
   input_type=""
   key_import=""
   target_publisher=""
+  keys_args=()
+  target_addresses_amount=""
+  target_addresses=()
+  keys_numbers=()
+  keys_numbers_amount=""
+  keys_fingerprints=()
+  keys_fingerprints_amount=""
   target_address=""
   target_key=""
   key_fingerprint=""
@@ -52,7 +59,6 @@ _global_variables() {
   output_prefix=""
   ks_address=""
   ks_version=""
-  keys_filters=()
   cache_dir=""
   gnupg_home=""
   command_args=()
@@ -236,7 +242,11 @@ _keys_receive() {
     _work_dir \
     _output_prefix_basename \
     _uri \
-    _uris=()
+    _uris=() \
+    _range
+  _range+=(
+    0
+  )
   _work_dir="${_cache_dir}/receive"
   _output_prefix_basename="$( \
     basename \
@@ -262,10 +272,11 @@ _keys_receive() {
     )
     _msg_info \
       "${_msg[*]}"
+    _range[1]="$(( \
+      "${_keys_amount}" - 1))"
     _keys+=( $( \
       seq \
-        0 \
-        "$(( "${_keys_amount}" - 1))")
+        "${_range[@]}")
     )
   elif [[ "${_key}" != "" ]] && \
        [[ "${_fingerprint}" == "" ]]; then
@@ -394,6 +405,58 @@ _keys_import() {
   done
 }
 
+_keys_args_parse() {
+  local \
+    _keys_args=() \
+    _address \
+    _fingerprint \
+    _key_number \
+    _range=()
+  _keys_args+=(
+    "$@"
+  )
+  _range+=(
+    0
+  )
+  _range[1]="$(( \
+    "${_target_addresses_amount}" - 1 ))"
+  for _address \
+    in $(seq \
+           "${_range[@]}"); do \
+    _target_addresses+=(
+      "${_address}"
+    )
+  done
+  shift \
+    "${_target_addresses_amount}" 
+  _range[1]="$(( \
+    "${_keys_numbers_amount}" - 1 ))"
+  for _key_number \
+    in $(seq \
+           "${_range[@]}"); do \
+    _keys_numbers+=(
+      "${_key_number}"
+    )
+  done
+  shift \
+    "${_keys_numbers_amount}" 
+  _range[1]="$(( \
+    "${_keys_fingerprints_amount}" - 1 ))"
+  for _fingerprint \
+    in $(seq \
+           "${_range[@]}"); do \
+    _keys_fingerprints+=(
+      "${_fingerprint}"
+    )
+  done
+  shift \
+    "${_keys_fingerprints_amount}" 
+}
+
+_target_publisher_discover() {
+  echo
+}
+
 _evm_openpgp_key_receive() {
   local \
     _ks_address="${1}" \
@@ -410,22 +473,43 @@ _evm_openpgp_key_receive() {
     _key_import="${12}" \
     _gnupg_home="${13}" \
     _target_publisher="${14}" \
-    _target_address="${15}" \
-    _target_key="${16}" \
-    _key_fingerprint="${17}" \
-    _output_prefix="${18}" \
+    _target_addresses_amount="${15}" \
+    _keys_numbers_amount="${16}" \
+    _keys_fingerprints_amount="${17}" \
+    _target_address="${18}" \
+    _target_key="${19}" \
+    _key_fingerprint="${20}" \
+    _output_prefix="${21}" \
+    _keys_args=() \
     _key_files=() \
+    _target_addresses=() \
+    _keys_numbers=() \
+    _keys_fingerprints=() \
     _msg=() \
     _ks_abi \
     _ks_bytecode \
-    _ks_compiler_output
+    _ks_compiler_output \
+    _address \
+    _key_number \
+    _key_fingerprint
   shift \
-    18
-  _command_args+=(
+    21
+  _keys_args+=(
     "$@"
   )
-  if [[ "${_target_publisher}" == "" ]]; then
+  _keys_args_parse \
+    "${_keys_args[@]}"
+  if [[ "${_target_publisher}" != "" ]]; then
+    _address_sanity_check \
+      "${_target_publisher}" \
+      "1"
+  elif [[ "${_target_publisher}" == "" ]]; then
     _target_publisher="${_target_address}"
+    if (( 0 == "${_target_addresses_amount}" )); then
+      _target_publisher_discover
+    elif (( 0 < "${_target_addresses_amount}" )); then
+      _target_publisher="${_target_address}"
+    fi
   fi
   if [[ "${_target_publisher}" != "${_target_address}" ]]; then
     _msg=(
@@ -486,12 +570,12 @@ _input_type_auto_detect() {
   local \
     _target_key \
     _input_type \
-    _re
-  _re='^[0-9]+$'
+    _number_assert
+  _number_assert='^[0-9]+$'
   _target_key="${target_key}"
   _input_type="number"
   if [[ "${_target_key}" != "" ]]; then
-    if ! [[ ${_target_key} =~ ${_re} ]] ; then
+    if ! [[ ${_target_key} =~ ${_number_assert} ]] ; then
       _input_type="fingerprint"
     fi
   fi
@@ -552,25 +636,72 @@ _output_prefix_auto_detect() {
 _filter_address_find() {
   local \
     _address_assert \
-    _addresses=() \
+    _filter
     _msg=()
   _address=""
-  for _filter in "${keys_filters[@]}"; do
+  for _filter in "${keys_args[@]}"; do
     _address_assert="$( \
       _address_sanity_check \
         "${_filter}" \
         "0")"
     if [[ "${_address_assert}" == "" ]]; then
-      _addresses+=(
+      target_addresses+=(
         "${_filter}"
       )
     fi
   done
-  if (( 1 < "${#_addresses[@]}" )); then
+  target_addresses_amonut="${#target_addresses[@]}"
+}
+
+_fingerprint_find() {
+  local
+  for _filter in "${keys_args[@]}"; do
+    if [[ " ${_addresses[*]} " != *" ${_filter} "* && \
+          " ${_keys_numbers[*]} " != *" ${_filter} "* ]]; then
+      _fingerprints+=(
+        "${_filter}"
+      )
+    fi
+  done
+  keys_fingerprints_amount="${#keys_fingerprints[@]}"
+}
+
+_keys_numbers_find() {
+  local \
+    _filter \
+    _number_assert
+  _number_assert='^[0-9]+$'
+  for _filter in "${keys_args[@]}"; do
+    if [[ ${_filter} =~ ${_number_assert} ]] ; then
+      keys_numbers+=(
+        "${_filter}"
+      )
+    fi
+  done
+  keys_numbers_amount="${#keys_numbers[@]}"
+}
+
+_keys_args_check() {
+  local \
+    _msg=()
+  if (( 1 < "${target_addresses[@]}" )) && \
+     (( 0 < "${keys_numbers[@]}" )); then
     _msg=(
-      "Ambiguous keys filters:"
-      "multiple target wallets (${_addresses[*]})"
-      "selected."
+      "Key number arguments can only"
+      "be used to get keys for a single"
+      "EVM address."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+  if (( 0 == "${target_addresses[@]}" )) && \
+     (( 0 == "${keys_fingerprints[@]}" )); then
+    _msg=(
+      "You must input at least one unique"
+      "identifier filter (EVM address Key numbers filters can only"
+      "be used to get keys for a single"
+      "address."
     )
     _msg_error \
       "${_msg[*]}" \
@@ -578,17 +709,44 @@ _filter_address_find() {
   fi
 }
 
-_fingerprint_find() {
-  local \
-    _fingerprint_assert
-  for _filter in "${keys_filters
+_keys_args_cli_parse() {
+  _filter_address_find
+  _keys_numbers_find
+  _fingerprint_find
+  _keys_args_check
 }
 
-_keys_filters_auto_detect() {
+_target_publisher_auto_detect() {
   local \
-    _address
-  _filter_address_find
-  _fingerprint_find
+    _publisher
+  _publisher=""
+  if (( 0 == "${target_addresses_amount}" )); then
+    _msg=(
+      "No publisher nor target addresses specified,"
+      "retrieving fingerprint owner from known"
+      "publishers."
+    )
+  elif (( 1 == "${target_addresses_amount}" )); then
+    _msg=(
+      "No publisher specified,"
+      "selecting self-published"
+      "keys."
+    )
+    _publisher="${_target_addresses[0]}"
+  elif (( 1 < "${target_addresses_amount}" )); then
+    _msg=(
+      "Multiple addresses selected,"
+      "selecting publishers at runtime."
+    )
+  fi
+  if [[ ! -v "override_target_publisher" ]]; then
+    _msg_info \
+      "${_msg[*]}"
+  fi
+  _set_override \
+    "target" \
+    "publisher" \
+    "${_publisher}"
 }
 
 _set_overrides() {
@@ -643,13 +801,10 @@ _set_overrides() {
     "gnupg" \
     "home" \
     "${HOME}/.gnupg"
-  _keys_filters_auto_detect
+  _keys_args_cli_parse
   _key_import_auto_detect
   _input_type_auto_detect
-  _set_override \
-    "target" \
-    "publisher" \
-    "${_target_address}"
+  _target_publisher_auto_detect
   _output_prefix_auto_detect
 }
 
@@ -879,14 +1034,13 @@ if (( $# < 1 )); then
   _usage \
     1
 fi
-keys_filters=()
 if (( 0 < "${#}" )); then
-  keys_filters+=(
+  keys_args+=(
     "${1}"
   )
   target_address="${1}"
 fi
-if (( $# < 2 )); then
+if (( "${#}" < 2 )); then
   _msg=(
     "No target key given,"
     "getting all of them."
@@ -896,7 +1050,7 @@ if (( $# < 2 )); then
 fi
 if (( 1 < "${#}" )); then
   target_key="${2}"
-  keys_filters+=(
+  keys_args+=(
     "${2}"
   )
 fi
@@ -923,10 +1077,16 @@ app_opts=(
   "${key_import}"
   "${gnupg_home}"
   "${target_publisher}"
+  "${target_addresses_amount}"
+  "${keys_numbers_amount}"
+  "${keys_fingerprints_amount}"
   "${target_address}"
   "${target_key}"
   "${key_fingerprint}"
   "${output_prefix}"
+  "${target_addresses[@]}"
+  "${keys_numbers[@]}"
+  "${keys_fingerprints[@]}"
 )
 _evm_openpgp_key_receive \
   "${app_opts[@]}"

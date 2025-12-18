@@ -620,11 +620,18 @@ _target_key_auto_detect() {
     _evm_gpg_opts=() \
     _gpg_homedir
   _target_key=""
-  evm-gpg \
-    -N \
-      "${wallet_name}"
-    list \
-      "fingerprint"
+  if [[ "${wallet_name}" != "" ]]; then
+    _evm_gpg_opts+=(
+      -N
+        "${wallet_name}"
+      -o
+        "fingerprint"
+    )
+    _target_key="$(
+      evm-gpg \
+        "${_evm_gpg_opts[@]}" \
+        list)"
+  fi
   _set_override \
     "target" \
     "key" \
@@ -669,6 +676,10 @@ _set_overrides() {
     "date" \
     "$(_get_date_human)"
   _set_override \
+    "wallet" \
+    "name" \
+    "default"
+  _set_override \
     "user" \
     "level" \
     "n"
@@ -699,7 +710,7 @@ _set_overrides() {
   _set_override \
     "gnupg" \
     "home" \
-    "${HOME}/.gnupg"
+    "${HOME}/.local/share/evm-gnupg"
   # _target_key_auto_detect
   _input_type_auto_detect
   _key_upload_auto_detect
