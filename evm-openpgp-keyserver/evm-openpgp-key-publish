@@ -622,18 +622,39 @@ _target_key_auto_detect() {
     _target_key \
     _evm_gpg_opts=() \
     _gpg_homedir
-  _target_key=""
-  if [[ "${wallet_name}" != "" ]]; then
-    _evm_gpg_opts+=(
-      -N
-        "${wallet_name}"
-      -o
-        "fingerprint"
-    )
-    _target_key="$(
-      evm-gpg \
-        "${_evm_gpg_opts[@]}" \
-        list)"
+  if [[ "${input_type}" == "fingerprint" ]]; then
+    if [[ "${wallet_name}" != "" ]]; then
+      _evm_gpg_opts+=(
+        -N
+          "${wallet_name}"
+        -o
+          "fingerprint"
+      )
+      _target_key="$(
+        evm-gpg \
+          "${_evm_gpg_opts[@]}" \
+          list)"
+    fi
+  elif [[ "${input_type}" == "file" ]]; then
+    if [[ ! -e "${_target_key}" ]]; then
+      _msg=(
+        "Key file '${_target_key}'"
+        "does not exist."
+      ) 
+      _msg_error \
+        "${_msg[*]}" \
+        1
+    fi
+  elif [[ "${input_type}" == "evmfs" ]]; then
+    if [[ "${_target_key}" != "evmfs://"* ]]; then
+      _msg=(
+        "Given address '${_target_key}'"
+        "is not an EVMFS uri."
+      )
+      _msg_error \
+        "${_msg[*]}" \
+        1
+    fi
   fi
   _set_override \
     "target" \
@@ -714,7 +735,7 @@ _set_overrides() {
     "home" \
     "${HOME}/.local/share/evm-gnupg"
   _target_address_auto_detect
-  # _target_key_auto_detect
+  _target_key_auto_detect
   _input_type_auto_detect
   _key_upload_auto_detect
   if [[ "${_target_key}" != "" ]]; then
@@ -786,9 +807,9 @@ $(_display_networks \
      "${_networks[@]}")
 
   options:
-     -H <gnupg_home>        GnuPG configuration directory.
+     -H <gnupg-home>        GnuPG configuration directory.
                             Default: ${gnupg_home}
-     -t <input_type>        It can be 'file', 'fingerprint' or
+     -t <input-type>        It can be 'file', 'fingerprint' or
                             'evmfs'.
                             Default: ${input_type}
      -S                     If enabled it won't upload the
@@ -796,10 +817,10 @@ $(_display_networks \
                             Default: ${input_type}
 
   contract options:
-     -A <ks_address>        Address of the EVM OpenPGP Key Server
+     -A <ks-address>        Address of the EVM OpenPGP Key Server
                             on the network.
                             Default: ${ks_address}
-     -V <ks_version>        Version of the target EVM OpenPGP Key
+     -V <ks-version>        Version of the target EVM OpenPGP Key
                             Server.
                             Default: ${ks_version}
 
@@ -808,25 +829,25 @@ $(_display_networks \
                             address from user directory or from
                             a custom deployment.
                             Default: ${user_level}
-     -d <deployments_dir>   Contracts deployments directory.
+     -d <deployments-dir>   Contracts deployments directory.
                             Default: ${deployments_dir}
      -n <network>           EVM network name.
                             Default: ${target_network}
 
   credentials options:
-     -N <wallet_name>       Wallet name.
+     -N <wallet-name>       Wallet name.
                             Default: ${wallet_name}
-     -w <wallet_path>       Wallet path.
+     -w <wallet-path>       Wallet path.
                             Default: ${wallet_path}
-     -p <wallet_password>   Wallet password.
+     -p <wallet-password>   Wallet password.
                             Default: ${wallet_password}
-     -s <wallet_seed>       Wallet seed path.
+     -s <wallet-seed>       Wallet seed path.
                             Default: ${wallet_seed}
-     -k <api_key>           Etherscan-like service key.
+     -k <api-key>           Etherscan-like service key.
                             Default: ${api_key}
 
   applications options
-     -C <cache_dir>         Work directory
+     -C <cache-dir>         Work directory
                             Default: ${cache_dir}
 
      -h                     This message.
@@ -944,13 +965,16 @@ while \
     v)
       override_quiet="n" ;;
     h)
-      _set_overrides && \
+      _set_overrides
       _usage \
         0 ;;
     *)
       if [[ " ${getopts_opts} " != *"${arg}"* ]]; then
+        _msg=(
+          "Invalid argument '${arg}'."
+        )
         _msg_error \
-          "Invalid argument '${arg}'." \
+          "${_msg[*]}" \
           0
         _usage \
           1

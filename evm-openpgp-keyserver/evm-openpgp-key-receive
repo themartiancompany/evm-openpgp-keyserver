@@ -1010,8 +1010,11 @@ while \
         0 ;;
     *) \
       if [[ " ${getopts_opts} " != *"${arg}"* ]]; then
+        _msg=(
+          "Invalid argument '${arg}'."
+        )
         _msg_error \
-          "Invalid argument '${arg}'." \
+          "${_msg[*]}" \
           0
         _usage \
           1
