@@ -725,7 +725,7 @@ _set_overrides() {
     "${target_network}"
   _wallet_overrides_set \
     "evm-wallet" \
-    "default" \
+    "${wallet_name}" \
     "y"
   _set_override \
     "cache" \
