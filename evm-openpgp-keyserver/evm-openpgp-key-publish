@@ -734,7 +734,7 @@ _set_overrides() {
   _set_override \
     "gnupg" \
     "home" \
-    "${HOME}/.local/share/evm-gnupg"
+    "${HOME}/.local/share/evm-gnupg/gnupg"
   _target_address_auto_detect
   _target_key_auto_detect
   _input_type_auto_detect
@@ -937,32 +937,16 @@ while \
   _libevm_app_getopts_case
   case \
     "${arg}" in
-    A)
-      override_ks_address="${OPTARG}" ;;
-    V)
-      override_ks_version="${OPTARG}" ;;
-    u)
-      override_user_level="y" ;;
-    d)
-      override_deployments_dir="${OPTARG}" ;;
-    N)
-      override_wallet_name="${OPTARG}" ;;
-    w)
-      override_wallet_path="${OPTARG}" ;;
-    p)
-      override_wallet_password="${OPTARG}" ;;
-    s)
-      override_wallet_seed="${OPTARG}" ;;
-    n)
-      override_target_network="${OPTARG}" ;;
-    k)
-      override_api_key="${OPTARG}" ;;
     H)
-      override_gpg_home="${OPTARG}" ;;
+      override_gnupg_home="${OPTARG}" ;;
     t)
       override_input_type="${OPTARG}" ;;
     S)
       override_key_upload="n" ;;
+    A)
+      override_ks_address="${OPTARG}" ;;
+    V)
+      override_ks_version="${OPTARG}" ;;
     C)
       override_cache_dir="${OPTARG}" ;;
     c)
