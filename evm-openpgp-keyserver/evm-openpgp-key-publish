@@ -886,6 +886,7 @@ _show_config() {
   _msg_info "                    Publisher:   ${wallet_address}"
   _msg_info "               Target address:   ${target_address}"
   _msg_info "                   Input type:   ${input_type}"
+  _msg_info "         GNUPG home directory:   ${gnupg_home}"
   _msg_info "            Key information:"
   _msg_info "                   Target key:   ${target_key}"
   _msg_info "              Key fingerprint:   ${key_fingerprint}"
