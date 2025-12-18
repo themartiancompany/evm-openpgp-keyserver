@@ -540,8 +540,11 @@ _key_data_auto_detect() {
         "fingerprint" \
       "${_key}")"
   if [[ "${_fingerprint}" == "" ]]; then
+    _msg=(
+      "No fingerprint found."
+    )
     _msg_error \
-      "No fingerprint found." \
+      "${_msg[*]}" \
       1
   fi
   _name="$( \
@@ -638,6 +641,19 @@ _target_key_auto_detect() {
     "${_target_key}"
 }
 
+_target_address_auto_detect() {
+  local \
+    _address
+  _address="${target_address}"
+  if [[ "${_address}" == "" ]]; then
+    _address="${wallet_address}"
+  fi
+  _set_override \
+    "target" \
+    "address" \
+    "${_address}"
+}
+
 _input_type_auto_detect() {
   local \
     _target_key \
@@ -683,13 +699,6 @@ _set_overrides() {
     "user" \
     "level" \
     "n"
-  _deployments_dir_auto_detect \
-    "evm-openpgp-keyserver" \
-    "${user_level}"
-  _network_auto_detect \
-    "KeyServer" \
-    "${deployments_dir}" \
-    "${user_level}"
   _api_key_auto_detect \
     "${target_network}"
   _wallet_overrides_set \
@@ -700,17 +709,11 @@ _set_overrides() {
     "cache" \
     "dir" \
     "$(_cache_dir_auto_detect)"
-  _contract_setup_auto_detect \
-    "evm-openpgp-keyserver" \
-    "KeyServer" \
-    "ks" \
-    "${target_network}" \
-    "${user_level}" \
-    "${deployments_dir}"
   _set_override \
     "gnupg" \
     "home" \
     "${HOME}/.local/share/evm-gnupg"
+  _target_address_auto_detect
   # _target_key_auto_detect
   _input_type_auto_detect
   _key_upload_auto_detect
@@ -718,6 +721,20 @@ _set_overrides() {
     _target_key_check
     _key_data_auto_detect
   fi
+  _deployments_dir_auto_detect \
+    "evm-openpgp-keyserver" \
+    "${user_level}"
+  _network_auto_detect \
+    "KeyServer" \
+    "${deployments_dir}" \
+    "${user_level}"
+  _contract_setup_auto_detect \
+    "evm-openpgp-keyserver" \
+    "KeyServer" \
+    "ks" \
+    "${target_network}" \
+    "${user_level}" \
+    "${deployments_dir}"
 }
 
 # Show help usage, with an exit status.
@@ -748,10 +765,21 @@ Ethereum Virtual Machine-compatible network OpenPGP Key Server keys publisher
 Usage:
   ${app_name}
     [options]
-    <address>
-    (<key> or -H <gnupg_home>
+    [args]
+    (<address>)
+    (<key>) or -H <gnupg_home>
               -f
               <fingerprint>)
+
+  arguments:
+    address                 The address of which to publish
+                            the "OpenPGP on Ethereum"-compliant
+                            key.
+                            If not specified, will select
+                            publisher address.
+                            Default: ${target_address}
+    key                     The key to publish.
+                            If not specified
 
   networks:
 $(_display_networks \
@@ -865,62 +893,77 @@ _requirements
 _config_user_init \
   "${app_name}"
 # shellcheck disable=SC2034
+getopts_opts="$( \
+  printf \
+    "%s" \
+    "H:t:S" \
+    "A:V:" \
+    "$(_libevm_app_getopts_params_get)" \
+    "n:" \
+    "$(_wallet_getopts_params_get)" \
+    "C:cvh")"
+# shellcheck disable=SC2034
 while \
   getopts \
-    'A:V:ud:N:w:p:s:n:k:H:t:SC:cvh?' \
+    "${getopts_opts}" \
     arg; do
+  _wallet_getopts_case
+  _libevm_app_getopts_case
   case \
     "${arg}" in
-    A) override_ks_address="${OPTARG}" ;;
-    V) override_ks_version="${OPTARG}" ;;
-    u) override_user_level="y" ;;
-    d) override_deployments_dir="${OPTARG}" ;;
-    N) override_wallet_name="${OPTARG}" ;;
-    w) override_wallet_path="${OPTARG}" ;;
-    p) override_wallet_password="${OPTARG}" ;;
-    s) override_wallet_seed="${OPTARG}" ;;
-    n) override_target_network="${OPTARG}" ;;
-    k) override_api_key="${OPTARG}" ;;
-    H) override_gpg_home="${OPTARG}" ;;
-    t) override_input_type="${OPTARG}" ;;
-    S) override_key_upload="n" ;;
-    C) override_cache_dir="${OPTARG}" ;;
-    c) override_color="y" ;;
-    v) override_quiet="n" ;;
-    h|?) _set_overrides && \
-         _usage \
-           0 ;;
+    A)
+      override_ks_address="${OPTARG}" ;;
+    V)
+      override_ks_version="${OPTARG}" ;;
+    u)
+      override_user_level="y" ;;
+    d)
+      override_deployments_dir="${OPTARG}" ;;
+    N)
+      override_wallet_name="${OPTARG}" ;;
+    w)
+      override_wallet_path="${OPTARG}" ;;
+    p)
+      override_wallet_password="${OPTARG}" ;;
+    s)
+      override_wallet_seed="${OPTARG}" ;;
+    n)
+      override_target_network="${OPTARG}" ;;
+    k)
+      override_api_key="${OPTARG}" ;;
+    H)
+      override_gpg_home="${OPTARG}" ;;
+    t)
+      override_input_type="${OPTARG}" ;;
+    S)
+      override_key_upload="n" ;;
+    C)
+      override_cache_dir="${OPTARG}" ;;
+    c)
+      override_color="y" ;;
+    v)
+      override_quiet="n" ;;
+    h)
+      _set_overrides && \
+      _usage \
+        0 ;;
     *)
-    _msg_error \
-      "Invalid argument '${arg}'" \
-      0
-    _usage \
-      1
-    ;;
+      if [[ " ${getopts_opts} " != *"${arg}"* ]]; then
+        _msg_error \
+          "Invalid argument '${arg}'." \
+          0
+        _usage \
+          1
+      fi ;;
   esac
 done
 shift \
   $(( \
     OPTIND - 1 \
   ))
-if (( $# < 1 )); then
-  _msg_error \
-    "No target address given." \
-    0
-  _set_overrides
-  _usage \
-    1
-fi
 if (( 0 < $# )); then
   target_address="${1}"
 fi
-# if (( $# < 2 )); then
-#   _msg_inf \
-#     "No target key given."
-#   # _set_overrides
-#   # _usage \
-#   #   1
-# fi
 if (( 1 < $# )); then
   target_key="${2}"
 fi

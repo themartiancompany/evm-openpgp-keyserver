@@ -21,13 +21,12 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-_bin="$( \
+_bin="$(
   dirname \
-    "$( \
-      command \
-        -v \
-	  "env")")"
-_lib="$( \
+    "$(command \
+         -v \
+	 "env")")"
+_lib="$(
   realpath \
     "${_bin}/../lib")"
 _crash_bash="${_lib}/libcrash-bash/crash-bash"
@@ -248,7 +247,7 @@ _keys_receive() {
     0
   )
   _work_dir="${_cache_dir}/receive"
-  _output_prefix_basename="$( \
+  _output_prefix_basename="$(
     basename \
       "${_output_prefix}")"
   mkdir \
@@ -264,7 +263,7 @@ _keys_receive() {
     )
     _msg_info \
       "${_msg[*]}"
-    _keys_amount="$( \
+    _keys_amount="$(
       _keys_amount_get)"
     _msg=(
       "Got a total of '${_keys_amount}'"
@@ -274,7 +273,7 @@ _keys_receive() {
       "${_msg[*]}"
     _range[1]="$(( \
       "${_keys_amount}" - 1))"
-    _keys+=( $( \
+    _keys+=( $(
       seq \
         "${_range[@]}")
     )
@@ -285,7 +284,7 @@ _keys_receive() {
     )
   elif [[ "${_fingerprint}" != "" ]] && \
        [[ "${_key}" == "" ]]; then
-    _key="$( \
+    _key="$(
       _key_fingerprint_get \
         "${_fingerprint}")"
     _msg=(
@@ -306,7 +305,7 @@ _keys_receive() {
     )
     _msg_info \
       "${_msg[*]}"
-    _uri="$( \
+    _uri="$(
       _uri_key_get \
         "${_key}")"
     _uris+=(
@@ -321,7 +320,7 @@ _keys_receive() {
     _key_download \
       "${_uris[${_uri}]}" \
       "${_key_file}"
-    _key_email="$( \
+    _key_email="$(
       evm-gpg-key-address-check \
         "${_key_file}" \
         "${_address}" || \
@@ -356,7 +355,7 @@ _keys_move() {
     _output_prefix="${1}" \
     _output_prefix_dirname \
     _msg=()
-  _output_prefix_dirname="$( \
+  _output_prefix_dirname="$(
     dirname \
       "${_output_prefix}")"
   mv \
@@ -612,7 +611,7 @@ _output_prefix_auto_detect() {
   _target_key="${target_key}"
   _output_prefix=""
   if [[ "${_key_import}" == "n" ]]; then
-    _base_prefix="$( \
+    _base_prefix="$(
       pwd)"
   elif [[ "${_key_import}" == "y" ]]; then
     _base_prefix="${HOME}/.cache/evm-openpgp-keyserver/receive"
@@ -640,7 +639,7 @@ _filter_address_find() {
     _msg=()
   _address=""
   for _filter in "${keys_args[@]}"; do
-    _address_assert="$( \
+    _address_assert="$(
       _address_sanity_check \
         "${_filter}" \
         "0")"
@@ -819,7 +818,7 @@ _usage() {
     _usage_text
   _contract="KeyServer"
   _ks_deployment="${deployments_dir}/${_contract}"
-  _networks=( $( \
+  _networks=( $(
     evm-contract-deployment-networks \
       -A \
       "${_ks_deployment}")
@@ -967,7 +966,7 @@ _libevm_app_global_variables
 _requirements
 _config_user_init \
   "${app_name}"
-getopts_opts="$( \
+getopts_opts="$(
   printf \
     "%s" \
     "H:t:f:C:P:" \
@@ -985,27 +984,27 @@ while \
   _libevm_app_getopts_case
   case \
     "${arg}" in
-    A) \
+    A)
       override_ks_address="${OPTARG}" ;;
-    V) \
+    V)
       override_ks_version="${OPTARG}" ;;
-    n) \
+    n)
       override_target_network="${OPTARG}" ;;
-    H) \
+    H)
       override_gnupg_home="${OPTARG}" ;;
-    t) \
+    t)
       override_input_type="${OPTARG}" ;;
-    f) \
+    f)
       override_key_import="${OPTARG}" ;;
-    C) \
+    C)
       override_cache_dir="${OPTARG}" ;;
-    P) \
+    P)
       override_target_publisher="${OPTARG}" ;;
-    c) \
+    c)
       override_color="y" ;;
-    v) \
+    v)
       override_quiet="n" ;;
-    h) \
+    h)
       _set_overrides && \
       _usage \
         0 ;;

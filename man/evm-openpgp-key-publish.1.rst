@@ -48,6 +48,13 @@ It uses EVM Contracts Tools to perform contract
 operations and main EVMFS implementation to upload
 the keys on the chain.
 
+Arguments
+===========
+
+* *address* *key* 
+
+
+
 Networks
 =========
 All those supported by
