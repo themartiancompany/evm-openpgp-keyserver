@@ -800,7 +800,11 @@ Usage:
                             publisher address.
                             Default: ${target_address}
     key                     The key to publish.
-                            If not specified
+                            If not specified will select
+                            the key for the target address
+                            present on the local EVM
+                            GNUPG keystore.
+                            Default: ${target_key}
 
   networks:
 $(_display_networks \
