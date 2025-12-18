@@ -622,6 +622,7 @@ _target_key_auto_detect() {
     _target_key \
     _evm_gpg_opts=() \
     _gpg_homedir
+  _target_key=""
   if [[ "${input_type}" == "fingerprint" ]]; then
     if [[ "${wallet_name}" != "" ]]; then
       _evm_gpg_opts+=(
