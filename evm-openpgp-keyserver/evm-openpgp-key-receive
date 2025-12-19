@@ -803,6 +803,7 @@ _set_overrides() {
   _keys_args_cli_parse
   _key_import_auto_detect
   _input_type_auto_detect
+  target_addresses_amount="${#target_addresses[@]}"
   _target_publisher_auto_detect
   _output_prefix_auto_detect
 }
@@ -852,9 +853,9 @@ $(_display_networks \
   options:
      -P <publisher>         Key publisher.
                             Default: ${target_publisher}
-     -H <gnupg_home>        GnuPG configuration directory.
+     -H <gnupg-home>        GnuPG configuration directory.
                             Default: ${gnupg_home}
-     -t <input_type>        Input type for the optional 'key' argument.
+     -t <input-type>        Input type for the optional 'key' argument.
                             It can be 'fingerprint' or
                             'number'.
                             Default: ${input_type}
@@ -871,10 +872,10 @@ $(_display_networks \
                             Default: ${output_prefix}
 
   contract options:
-     -A <ks_address>        Address of the EVM OpenPGP Key Server
+     -A <ks-address>        Address of the EVM OpenPGP Key Server
                             on the network.
                             Default: ${ks_address}
-     -V <ks_version>        Version of the target EVM OpenPGP Key
+     -V <ks-version>        Version of the target EVM OpenPGP Key
                             Server.
                             Default: ${ks_version}
 
@@ -883,25 +884,25 @@ $(_display_networks \
                             address from user directory or from
                             a custom deployment.
                             Default: ${user_level}
-     -d <deployments_dir>   Contracts deployments directory.
+     -d <deployments-dir>   Contracts deployments directory.
                             Default: ${deployments_dir}
      -n <network>           EVM network name (${_networks[*]}).
                             Default: ${target_network}
 
   credentials options:
-     -N <wallet_name>       Wallet name.
+     -N <wallet-name>       Wallet name.
                             Default: ${wallet_name}
-     -w <wallet_path>       Wallet path.
+     -w <wallet-path>       Wallet path.
                             Default: ${wallet_path}
-     -p <wallet_password>   Wallet password.
+     -p <wallet-password>   Wallet password.
                             Default: ${wallet_password}
-     -s <wallet_seed>       Wallet seed path.
+     -s <wallet-seed>       Wallet seed path.
                             Default: ${wallet_seed}
-     -k <api_key>           Etherscan-like service key.
+     -k <api-key>           Etherscan-like service key.
                             Default: ${api_key}
 
   application options:
-     -C <cache_dir>         Work directory
+     -C <cache-dir>         Work directory
                             Default: ${cache_dir}
 
      -h                     This message.
@@ -1025,7 +1026,7 @@ shift \
   $(( \
     OPTIND - 1 \
   ))
-if (( $# < 1 )); then
+if (( "${#}" < 1 )); then
   _msg=(
     "No target address given."
   )
