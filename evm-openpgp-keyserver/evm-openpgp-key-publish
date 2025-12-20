@@ -21,13 +21,12 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-_bin="$( \
+_bin="$(
   dirname \
-    "$( \
-      command \
-        -v \
-	  "env")")"
-_lib="$( \
+    "$(command \
+         -v \
+	 "env")")"
+_lib="$(
   realpath \
     "${_bin}/../lib")"
 _crash_bash="${_lib}/libcrash-bash/crash-bash"
@@ -110,7 +109,7 @@ _key_evmfs_upload() {
     "${_evmfs_publish_opts[@]}" \
     publish \
       "${_key}" 
-  _uri="$( \
+  _uri="$(
     _key_evmfs_uri_get \
       "${_key}")"
   _msg=(
@@ -215,7 +214,7 @@ _uri_auto_detect() {
   if [[ "${_uri}" == "" ]]; then
     if [[ "${_input_type}" == "file" || \
           "${_fingerprint}" ]]; then
-      _uri="$( \
+      _uri="$(
         _key_evmfs_uri_get \
           "${_key}")"
     fi
@@ -331,7 +330,7 @@ _evm_openpgp_key_publish() {
   _key_address_check \
     "${_target_address}" \
     "${_key_email}"
-  _namespace="$( \
+  _namespace="$(
     evm-wallet \
      get \
        "${_wallet_name}" \
@@ -480,7 +479,7 @@ _target_key_check() {
         "${_msg[*]}" \
         1
     elif [[ -e "${_target_key}" ]]; then
-      target_key="$( \
+      target_key="$(
         realpath \
           "${_target_key}")"
     fi
@@ -533,7 +532,7 @@ _key_data_auto_detect() {
     _uri="${_key}"
     _key="${_cache_dir}/temp.asc"
   fi
-  _fingerprint="$( \
+  _fingerprint="$(
     gpg-key-info \
       "${_gpg_key_info_opts[@]}" \
       -o \
@@ -547,7 +546,7 @@ _key_data_auto_detect() {
       "${_msg[*]}" \
       1
   fi
-  _name="$( \
+  _name="$(
     gpg-key-info \
       "${_gpg_key_info_opts[@]}" \
       -o \
@@ -561,7 +560,7 @@ _key_data_auto_detect() {
     _msg_warning \
       "${_msg[*]}"
   fi
-  _email="$( \
+  _email="$(
     gpg-key-info \
       "${_gpg_key_info_opts[@]}" \
       -o \
@@ -770,7 +769,7 @@ _usage() {
     _usage_text
   _contract="KeyServer"
   _ks_deployment="${deployments_dir}/${_contract}"
-  _networks=( $( \
+  _networks=( $(
     evm-contract-deployment-networks \
       -A \
       "${_ks_deployment}")
@@ -920,7 +919,7 @@ _requirements
 _config_user_init \
   "${app_name}"
 # shellcheck disable=SC2034
-getopts_opts="$( \
+getopts_opts="$(
   printf \
     "%s" \
     "H:t:S" \
