@@ -683,8 +683,8 @@ _keys_numbers_find() {
 _keys_args_check() {
   local \
     _msg=()
-  if (( 1 < "${target_addresses[@]}" )) && \
-     (( 0 < "${keys_numbers[@]}" )); then
+  if (( 1 < "${#target_addresses[@]}" )) && \
+     (( 0 < "${#keys_numbers[@]}" )); then
     _msg=(
       "Key number arguments can only"
       "be used to get keys for a single"
@@ -694,8 +694,8 @@ _keys_args_check() {
       "${_msg[*]}" \
       1
   fi
-  if (( 0 == "${target_addresses[@]}" )) && \
-     (( 0 == "${keys_fingerprints[@]}" )); then
+  if (( 0 == "${#target_addresses[@]}" )) && \
+     (( 0 == "${#keys_fingerprints[@]}" )); then
     _msg=(
       "You must input at least one unique"
       "identifier filter (EVM address Key numbers filters can only"
