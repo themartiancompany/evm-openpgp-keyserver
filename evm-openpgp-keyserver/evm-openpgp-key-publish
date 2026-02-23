@@ -720,6 +720,10 @@ _set_overrides() {
     "user" \
     "level" \
     "n"
+  _set_override \
+    "target" \
+    "network" \
+    "${target_network}"
   _network_auto_detect \
     "KeyServer" \
     "${deployments_dir}" \
@@ -949,6 +953,8 @@ while \
       override_key_upload="n" ;;
     A)
       override_ks_address="${OPTARG}" ;;
+    n)
+      override_target_network="${OPTARG}" ;;
     V)
       override_ks_version="${OPTARG}" ;;
     C)
