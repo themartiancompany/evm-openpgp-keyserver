@@ -720,6 +720,10 @@ _set_overrides() {
     "user" \
     "level" \
     "n"
+  _network_auto_detect \
+    "KeyServer" \
+    "${deployments_dir}" \
+    "${user_level}"
   _api_key_auto_detect \
     "${target_network}"
   _wallet_overrides_set \
