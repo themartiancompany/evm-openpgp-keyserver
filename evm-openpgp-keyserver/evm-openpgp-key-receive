@@ -731,7 +731,7 @@ _target_publisher_auto_detect() {
       "selecting self-published"
       "keys."
     )
-    _publisher="${_target_addresses[0]}"
+    _publisher="${target_addresses[0]}"
   elif (( 1 < "${target_addresses_amount}" )); then
     _msg=(
       "Multiple addresses selected,"
