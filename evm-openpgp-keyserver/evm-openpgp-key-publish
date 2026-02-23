@@ -393,11 +393,19 @@ _evm_openpgp_key_publish() {
 
 _key_retrieve_keystore() {
   local \
-    _fingerprint="${1}" \
-    _gnupg_home="${2}" \
-    _output_file="${3}" \
+    _address="${1}" \
+    _fingerprint="${2}" \
+    _gnupg_home="${3}" \
+    _output_file="${4}" \
+    _retriever \
+    _evm_gpg_args=() \
+    _evm_gpg_opts=() \
     _gpg_opts=() \
     _msg=()
+  _retriever="evm-gpg"
+  if (( 4 < "$#" )); then
+    _retriever="${4}"
+  fi
   _msg=(
     "Exporting in '${_output_file}' the key"
     "with fingerprint '${_fingerprint}'"
@@ -405,16 +413,47 @@ _key_retrieve_keystore() {
   )
   _msg_info \
     "${_msg[*]}"
+  _evm_gpg_opts+=(
+    -v
+  )
   _gpg_opts+=(
       --homedir
         "${_gnupg_home}"
       --export
       --armor
   )
-  gpg \
-    "${_gpg_opts[@]}" \
-    "${_fingerprint}" 2>/dev/null > \
+  _evm_gpg_args+=(
+    export
     "${_output_file}"
+    "public"
+    "${_address}"
+  )
+  if [[ "${_retriever}" == "evm-gpg" ]]; then
+    _msg=(
+      "Running evm-gpg with options"
+      "'${_evm_gpg_opts[*]} -- ${_evm_gpg_args[*]}'."
+    )
+    _msg_info \
+      "${_msg[*]}"
+    rm \
+      -rf \
+      "${_output_file}"
+    evm-gpg \
+      "${_evm_gpg_opts[@]}" \
+      "${_evm_gpg_args[@]}"
+  elif [[ "${_retriever}" == "gpg" ]]; then
+    _msg=(
+      "Running gpg with options"
+      "'${_gpg_opts[*]} ${_fingerprint}'."
+    )
+    _msg_info \
+      "${_msg[*]}"
+    gpg \
+      "${_gpg_opts[@]}" \
+      "${_fingerprint}" 2>/dev/null > \
+      "${_output_file}" || \
+    true
+  fi
 }
 
 _key_retrieve_evmfs() {
@@ -518,6 +557,7 @@ _key_data_auto_detect() {
       -p \
       "${_cache_dir}"
     _key_retrieve_keystore \
+      "${target_address}" \
       "${_key}" \
       "${_gnupg_home}" \
       "${_cache_dir}/temp.asc"
@@ -537,7 +577,8 @@ _key_data_auto_detect() {
       "${_gpg_key_info_opts[@]}" \
       -o \
         "fingerprint" \
-      "${_key}")"
+      "${_key}" || \
+    true)"
   if [[ "${_fingerprint}" == "" ]]; then
     _msg=(
       "No fingerprint found."
@@ -686,6 +727,12 @@ _input_type_auto_detect() {
       _input_type="file"
     elif [[ "${_target_key}" == "evmfs://"* ]]; then
       _input_type="evmfs"
+    else
+      _msg=(
+        "Input type assumed 'fingerprint'."
+      )
+      _msg_info \
+        "${_msg[*]}"
     fi
   fi
   _set_override \
@@ -749,6 +796,9 @@ _set_overrides() {
   if [[ "${_target_key}" != "" ]]; then
     _target_key_check
     _key_data_auto_detect
+  else
+    _msg_info \
+      "${_target_key} null"
   fi
   _deployments_dir_auto_detect \
     "evm-openpgp-keyserver" \
